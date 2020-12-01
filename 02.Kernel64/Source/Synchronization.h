@@ -3,7 +3,7 @@
  *  date    2009/03/13
  *  author  kkamagui 
  *          Copyright(c)2008 All rights reserved by kkamagui 
- *  brief   µ¿±âÈ­¸¦ Ã³¸®ÇÏ´Â ÇÔ¼ö¿¡ °ü·ÃµÈ ÆÄÀÏ
+ *  brief   ë™ê¸°í™”ë¥¼ ì²˜ë¦¬í•˜ëŠ” í•¨ìˆ˜ì— ê´€ë ¨ëœ íŒŒì¼
  */
 
 #ifndef __SYNCHRONIZATION_H__
@@ -13,36 +13,36 @@
 
 ////////////////////////////////////////////////////////////////////////////////
 //
-// ±¸Á¶Ã¼
+// êµ¬ì¡°ì²´
 //
 ////////////////////////////////////////////////////////////////////////////////
-// 1¹ÙÀÌÆ®·Î Á¤·Ä
+// 1ë°”ì´íŠ¸ë¡œ ì •ë ¬
 #pragma pack( push, 1 )
 
-// ¹ÂÅØ½º ÀÚ·á±¸Á¶
+// ë®¤í…ìŠ¤ ìžë£Œêµ¬ì¡°
 typedef struct kMutexStruct
 {
-    // ÅÂ½ºÅ© ID¿Í Àá±ÝÀ» ¼öÇàÇÑ È½¼ö
+    // íƒœìŠ¤í¬ IDì™€ ìž ê¸ˆì„ ìˆ˜í–‰í•œ íšŸìˆ˜
     volatile QWORD qwTaskID;
     volatile DWORD dwLockCount;
 
-    // Àá±Ý ÇÃ·¡±×
+    // ìž ê¸ˆ í”Œëž˜ê·¸
     volatile BOOL bLockFlag;
     
-    // ÀÚ·á±¸Á¶ÀÇ Å©±â¸¦ 8¹ÙÀÌÆ® ´ÜÀ§·Î ¸ÂÃß·Á°í Ãß°¡ÇÑ ÇÊµå
+    // ìžë£Œêµ¬ì¡°ì˜ í¬ê¸°ë¥¼ 8ë°”ì´íŠ¸ ë‹¨ìœ„ë¡œ ë§žì¶”ë ¤ê³  ì¶”ê°€í•œ í•„ë“œ
     BYTE vbPadding[ 3 ];
 } MUTEX;
 
-// ¼¼¸¶Æ÷¾î ÀÚ·á±¸Á¶
+// ì„¸ë§ˆí¬ì–´ ìžë£Œêµ¬ì¡°
 typedef struct kSemaphoreStruct
 {
-    // ÅÂ½ºÅ© ID¿Í Àá±ÝÀ» ¼öÇàÇÑ È½¼ö
+    // íƒœìŠ¤í¬ IDì™€ ìž ê¸ˆì„ ìˆ˜í–‰í•œ íšŸìˆ˜
     volatile DWORD dwLockCount;
 
-    // Àá±Ý °æ°è
+    // ìž ê¸ˆ ê²½ê³„
     volatile DWORD dwInitialCount;
     
-    // ÀÚ·á±¸Á¶ÀÇ Å©±â¸¦ 8¹ÙÀÌÆ® ´ÜÀ§·Î ¸ÂÃß·Á°í Ãß°¡ÇÑ ÇÊµå
+    // ìžë£Œêµ¬ì¡°ì˜ í¬ê¸°ë¥¼ 8ë°”ì´íŠ¸ ë‹¨ìœ„ë¡œ ë§žì¶”ë ¤ê³  ì¶”ê°€í•œ í•„ë“œ
     // BYTE vbPadding[  ];
 } SEMAPHORE;
 
@@ -50,7 +50,7 @@ typedef struct kSemaphoreStruct
 
 ////////////////////////////////////////////////////////////////////////////////
 //
-// ÇÔ¼ö
+// í•¨ìˆ˜
 //
 ////////////////////////////////////////////////////////////////////////////////
 BOOL kLockForSystemData( void );

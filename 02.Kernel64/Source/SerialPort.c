@@ -81,7 +81,7 @@ void kSendSerialData( BYTE* pbBuffer, int iSize )
     int j;
     
     // 동기화
-    kLock( &( gs_stSerialManager.stLock ) );
+    kLockMutex( &( gs_stSerialManager.stLock ) );
     
     // 요청한 바이트 수만큼 보낼 때까지 반복
     iSentByte = 0;
@@ -106,7 +106,7 @@ void kSendSerialData( BYTE* pbBuffer, int iSize )
     }
 
     // 동기화
-    kUnlock( &( gs_stSerialManager.stLock ) );
+    kUnlockMutex( &( gs_stSerialManager.stLock ) );
 }
 
 /**
@@ -135,7 +135,7 @@ int kReceiveSerialData( BYTE* pbBuffer, int iSize )
     int i;
     
     // 동기화
-    kLock( &( gs_stSerialManager.stLock ) );
+    kLockMutex( &( gs_stSerialManager.stLock ) );
     
     // 루프를 돌면서 현재 버퍼에 있는 데이터를 읽어서 반환
     for( i = 0 ; i < iSize ; i++ )
@@ -151,7 +151,7 @@ int kReceiveSerialData( BYTE* pbBuffer, int iSize )
     }
     
     // 동기화
-    kUnlock( &( gs_stSerialManager.stLock ) );
+    kUnlockMutex( &( gs_stSerialManager.stLock ) );
 
     // 읽은 데이터의 개수를 반환
     return i;
@@ -163,7 +163,7 @@ int kReceiveSerialData( BYTE* pbBuffer, int iSize )
 void kClearSerialFIFO( void )
 {
     // 동기화
-    kLock( &( gs_stSerialManager.stLock ) );
+    kLockMutex( &( gs_stSerialManager.stLock ) );
     
     // 송수신 FIFO를 모두 비우고 버퍼에 데이터가 14바이트 찼을 때 인터럽트가 
     // 발생하도록 FIFO 제어 레지스터(포트 0x3FA)에 설정 값을 전송
@@ -172,5 +172,5 @@ void kClearSerialFIFO( void )
         SERIAL_FIFOCONTROL_CLEARRECEIVEFIFO | SERIAL_FIFOCONTROL_CLEARTRANSMITFIFO );
     
     // 동기화
-    kUnlock( &( gs_stSerialManager.stLock ) );
+    kUnlockMutex( &( gs_stSerialManager.stLock ) );
 }
