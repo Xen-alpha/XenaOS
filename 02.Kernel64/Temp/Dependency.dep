@@ -2,6 +2,9 @@ FileSystem.o: ../Source/FileSystem.c ../Source/FileSystem.h \
  ../Source/Utility.h ../Source/Types.h ../Source/AssemblyUtility.h \
  ../Source/Task.h ../Source/List.h ../Source/Synchronization.h \
  ../Source/HardDisk.h ../Source/DynamicMemory.h
+Sata.o: ../Source/Sata.c ../Source/Sata.h ../Source/Types.h \
+ ../Source/Console.h ../Source/Utility.h ../Source/AssemblyUtility.h \
+ ../Source/Task.h ../Source/List.h ../Source/Synchronization.h
 Main.o: ../Source/Main.c ../Source/Utility.h ../Source/Types.h \
  ../Source/AssemblyUtility.h ../Source/Task.h ../Source/List.h \
  ../Source/Synchronization.h ../Source/Keyboard.h ../Source/Descriptor.h \

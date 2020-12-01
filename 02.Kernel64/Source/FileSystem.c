@@ -49,7 +49,7 @@ BOOL kInitializeFileSystem( void )
     {
         return FALSE;
     }
-    /*
+    
     // 핸들을 위한 공간을 할당
     gs_stFileSystemManager.pstHandlePool = ( FILE* ) kAllocateMemory( FILESYSTEM_HANDLE_MAXCOUNT * sizeof( FILE ) );
     
@@ -62,7 +62,7 @@ BOOL kInitializeFileSystem( void )
     
     // 핸들 풀을 모두 0으로 설정하여 초기화
     memset( gs_stFileSystemManager.pstHandlePool, 0, FILESYSTEM_HANDLE_MAXCOUNT * sizeof( FILE ) );    
-    */
+    
     return TRUE;
 }
 

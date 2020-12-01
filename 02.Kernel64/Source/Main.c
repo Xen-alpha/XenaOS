@@ -16,6 +16,7 @@
 #include "DynamicMemory.h"
 #include "HardDisk.h"
 #include "FileSystem.h"
+#include "SerialPort.h"
 
 // 함수 선언
 
@@ -98,6 +99,10 @@ void Main( void )
     {
         kPrintf( "File System Initialize......................[Fail]\n" );
     }
+
+    kInitializeSerialPort();
+    kPrintf( "Serial Port Initialize......................[Pass]\n" );
+    iCursorY++;
 
     // 유휴 태스크를 생성하고 셸을 시작
     kCreateTask( TASK_FLAGS_LOWEST | TASK_FLAGS_THREAD | TASK_FLAGS_SYSTEM | TASK_FLAGS_IDLE, 0, 0, ( QWORD ) kIdleTask );
