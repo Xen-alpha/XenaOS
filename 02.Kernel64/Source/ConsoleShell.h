@@ -112,4 +112,6 @@ static void kWriteDataToFile(const char* pcPrameterBuffer);
 static void kReadDataFromFile(const char* pcPrameterBuffer);
 static void kTestFileIO(const char* pcPrameterBuffer);
 
+static void kShowMPConfigurationTable(const char* pcParameterBuffer);
+
 #endif /*__CONSOLESHELL_H__*/

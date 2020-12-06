@@ -18,6 +18,7 @@ cn *  brief   콘솔 셸에 관련된 소스 파일
 #include "HardDisk.h"
 #include "FileSystem.h"
 #include "SerialPort.h"
+#include "MPConfigurationTable.h"
 
 // 커맨드 테이블 정의
 SHELLCOMMANDENTRY gs_vstCommandTable[] =
@@ -60,6 +61,7 @@ SHELLCOMMANDENTRY gs_vstCommandTable[] =
         { "writefile", "Write Data To File, ex) writefile a.txt", kWriteDataToFile },
         { "readfile", "Read Data From File, ex) readfile a.txt", kReadDataFromFile },
         { "testfileio", "Test File I/O Function", kTestFileIO },
+        { "showmpinfo", "Show MP Configuration Table Infomation", kShowMPConfigurationTable},
 };                                     
 
 //==============================================================================
@@ -2031,3 +2033,7 @@ static void kTestFileIO( const char* pcParameterBuffer )
     kFreeMemory( pbBuffer );    
 }
 
+//MP 테이블 정보 출력
+static void kShowMPConfigurationTable (const char* pcParameterBuffer) {
+    kPrintMPConfigurationTable();
+}
