@@ -17,9 +17,11 @@
 #include "HardDisk.h"
 #include "FileSystem.h"
 #include "SerialPort.h"
+#include "LocalAPIC.h"
+#include "MultiProcessor.h"
 
 // 함수 선언
-
+void MainForAP(void);
 
 /**
  *  아래 함수는 C 언어 커널의 시작 부분임
@@ -27,6 +29,13 @@
 void Main( void )
 {
     int iCursorX, iCursorY;
+
+    if (*((BYTE *)BOOTSTRAPPROCESSOR_FLAGADDRESS) == 0) {
+        MainForAP();
+    }
+
+    // Bootstrap Processor는 이제 AP에 대한 사다리 걷어차기를 해야 커널이 손상되는 것을 방지한다.
+    *((BYTE *)BOOTSTRAPPROCESSOR_FLAGADDRESS) = 0;
 
     kInitializeConsole(0,24);
     kPrintf ("Switch To IA-32e Mode Success~!!\n" );
@@ -107,4 +116,31 @@ void Main( void )
     // 유휴 태스크를 생성하고 셸을 시작
     kCreateTask( TASK_FLAGS_LOWEST | TASK_FLAGS_THREAD | TASK_FLAGS_SYSTEM | TASK_FLAGS_IDLE, 0, 0, ( QWORD ) kIdleTask );
     kStartConsoleShell();
+}
+
+void MainForAP(void){
+    QWORD qwTickCount;
+
+    // GDT 테이블을 설정
+    kLoadGDTR( GDTR_STARTADDRESS );
+
+    // TSS 디스크립터를 설정. TSS 세그먼트와 디스크립터를 Application Processor의 
+    // 수만큼 생성했으므로, APIC ID를 이용하여 TSS 디스크립터를 할당
+    kLoadTR( GDT_TSSSEGMENT + ( kGetAPICID() * sizeof( GDTENTRY16 ) ) );
+
+    // IDT 테이블을 설정
+    kLoadIDTR( IDTR_STARTADDRESS );
+
+    // 1초마다 한번씩 메시지를 출력
+    qwTickCount = kGetTickCount();
+    while( 1 )
+    {
+        if( kGetTickCount() - qwTickCount > 1000 )
+        {
+            qwTickCount = kGetTickCount();
+            
+            kPrintf( "Application Processor[APIC ID: %d] Is Activated\n",
+                    kGetAPICID() );
+        }
+    }
 }

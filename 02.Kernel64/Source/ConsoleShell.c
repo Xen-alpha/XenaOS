@@ -19,6 +19,8 @@ cn *  brief   콘솔 셸에 관련된 소스 파일
 #include "FileSystem.h"
 #include "SerialPort.h"
 #include "MPConfigurationTable.h"
+#include "LocalAPIC.h"
+#include "MultiProcessor.h"
 
 // 커맨드 테이블 정의
 SHELLCOMMANDENTRY gs_vstCommandTable[] =
@@ -62,6 +64,7 @@ SHELLCOMMANDENTRY gs_vstCommandTable[] =
         { "readfile", "Read Data From File, ex) readfile a.txt", kReadDataFromFile },
         { "testfileio", "Test File I/O Function", kTestFileIO },
         { "showmpinfo", "Show MP Configuration Table Infomation", kShowMPConfigurationTable},
+        { "startap", "Start Application Processor", kStartApplicationProcessor },
 };                                     
 
 //==============================================================================
@@ -2036,4 +2039,22 @@ static void kTestFileIO( const char* pcParameterBuffer )
 //MP 테이블 정보 출력
 static void kShowMPConfigurationTable (const char* pcParameterBuffer) {
     kPrintMPConfigurationTable();
+}
+
+/**
+ *  AP(Application Processor)를 시작
+ */
+static void kStartApplicationProcessor( const char* pcParameterBuffer )
+{
+    // AP(Application Processor)를 깨움
+    if( kStartUpApplicationProcessor() == FALSE )
+    {
+        kPrintf( "Application Processor Start Fail\n" );
+        return ;
+    }
+    kPrintf( "Application Processor Start Success\n" );
+    
+    // BSP(Bootstrap Processor)의 APIC ID 출력
+    kPrintf( "Bootstrap Processor[APIC ID: %d] Start Application Processor\n",
+             kGetAPICID() );
 }

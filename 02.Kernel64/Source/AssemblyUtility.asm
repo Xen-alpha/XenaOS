@@ -14,6 +14,7 @@ global kEnableInterrupt, kDisableInterrupt, kReadRFLAGS
 global kReadTSC
 global kSwitchContext, kHlt, kTestAndSet
 global kInitializeFPU, kSaveFPUContext, kLoadFPUContext, kSetTS, kClearTS
+global kEnableGlobalLocalAPIC
 
 ; 포트로부터 1바이트를 읽음
 ;   PARAM: 포트 번호
@@ -345,3 +346,18 @@ kSetTS:
 kClearTS:
     clts                ; CR0 컨트롤 레지스터에서 TS 비트를 0으로 설정
     ret    
+
+kEnableGlobalLocalAPIC:
+    push rax
+    push rcx
+    push rdx
+
+    mov rcx, 27
+    rdmsr
+    or eax, 0x0800
+    wrmsr
+
+    pop rdx
+    pop rcx
+    pop rax
+    ret

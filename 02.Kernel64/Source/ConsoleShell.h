@@ -114,4 +114,6 @@ static void kTestFileIO(const char* pcPrameterBuffer);
 
 static void kShowMPConfigurationTable(const char* pcParameterBuffer);
 
+static void kStartApplicationProcessor(const char* pcParameterBuffer);
+
 #endif /*__CONSOLESHELL_H__*/
