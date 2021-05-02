@@ -15,6 +15,8 @@
 #include "Descriptor.h"
 #include "AssemblyUtility.h"
 #include "HardDisk.h"
+#include "LocalAPIC.h"
+#include "IOAPIC.h"
 
 /**
  *  공통으로 사용하는 예외 핸들러
@@ -57,6 +59,7 @@ void kCommonInterruptHandler( int iVectorNumber )
 
     // EOI 전송
     kSendEOIToPIC( iVectorNumber - PIC_IRQSTARTVECTOR );
+    kSendEOIToLocalAPIC();
 }
 
 /**
@@ -87,6 +90,7 @@ void kKeyboardHandler( int iVectorNumber )
 
     // EOI 전송
     kSendEOIToPIC( iVectorNumber - PIC_IRQSTARTVECTOR );
+    kSendEOIToLocalAPIC();
 }
 
 /**
@@ -110,6 +114,7 @@ void kTimerHandler( int iVectorNumber )
     
     // EOI 전송
     kSendEOIToPIC( iVectorNumber - PIC_IRQSTARTVECTOR );
+    kSendEOIToLocalAPIC();
 
     // 타이머 발생 횟수를 증가
     g_qwTickCount++;
@@ -219,4 +224,5 @@ void kHDDHandler( int iVectorNumber )
     
     // EOI 전송
     kSendEOIToPIC( iVectorNumber - PIC_IRQSTARTVECTOR );
+    kSendEOIToLocalAPIC();
 }
