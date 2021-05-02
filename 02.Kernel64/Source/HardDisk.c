@@ -6,11 +6,7 @@
  *  brief   하드 디스크 컨트롤러에 관련된 소스 파일
  */
 
- // 주의!!! 이 파일의 초기화 함수는 AHCI 초기화가 끝난 후 실행되어야 한다.
-
 #include "HardDisk.h"
-#include "Utility.h"
-#include "Console.h"
 
 // 하드 디스크를 관리하는 자료구조
 static HDDMANAGER gs_stHDDManager;
@@ -27,19 +23,6 @@ BOOL kInitializeHDD(void)
     gs_stHDDManager.bPrimaryInterruptOccur = FALSE;
     gs_stHDDManager.bSecondaryInterruptOccur = FALSE;
 
-    // 하지만 그에 앞서, SATA를 확인해보자.
-    // 그에 따라, 이 함수는 AHCI 초기화가 끝난 후 실행되어야 한다.
-
-
-
-
-
-
-
-
-
-
-
     // 첫 번째와 두 번째 PATA 포트의 디지털 출력 레지스터(포트 0x3F6와 0x376)에 0을
     // 출력하여 하드 디스크 컨트롤러의 인터럽트를 활성화
     kOutPortByte( HDD_PORT_PRIMARYBASE + HDD_PORT_INDEX_DIGITALOUTPUT, 0 );
@@ -54,16 +37,16 @@ BOOL kInitializeHDD(void)
         return FALSE;
     }
 
-    // 하드 디스크가 검색되었으면 QEMU와 Virtualbox에서만 쓸 수 있도록 설정
+    // 하드 디스크가 검색되었으면 QEMU에서만 쓸 수 있도록 설정하지 않음
     gs_stHDDManager.bHDDDetected = TRUE;
-    if( memcmp( gs_stHDDManager.stHDDInformation.vwModelNumber, "Xena", 4 ) == 0 || memcmp( gs_stHDDManager.stHDDInformation.vwModelNumber, "VBOX", 4 ) == 0 )
-    {
+    /*if( kMemCmp( gs_stHDDManager.stHDDInformation.vwModelNumber, "Xena", 4 ) == 0 )
+    {*/
         gs_stHDDManager.bCanWrite = TRUE;
-    }
+    /**
     else
     {
         gs_stHDDManager.bCanWrite = FALSE;
-    }
+    }*/
     return TRUE;
 }
 
@@ -504,7 +487,7 @@ int kWriteHDDSector(BOOL bPrimary, BOOL bMaster, DWORD dwLBA, int iSectorCount,
     }
     // 드라이브/헤드 레지스터(포트 0x1F6 또는 0x176)에 쓸 섹터의 위치(LBA 24~27비트)와
     // 설정된 값을 같이 전송
-    kOutPortByte( wPortBase + HDD_PORT_INDEX_DRIVEANDHEAD, bDriveFlag | ( (dwLBA
+    kOutPortByte(wPortBase + HDD_PORT_INDEX_DRIVEANDHEAD, bDriveFlag | ( (dwLBA
             >> 24 ) & 0x0F ) );
 
     //==========================================================================
@@ -533,7 +516,7 @@ int kWriteHDDSector(BOOL bPrimary, BOOL bMaster, DWORD dwLBA, int iSectorCount,
             return 0;
         }
         
-        // Data Request 비트가 설정되었다면 데이터 송신 가능
+        // Data Request비트가 설정되었다면 데이터 송신 가능
         if( ( bStatus & HDD_STATUS_DATAREQUEST ) == HDD_STATUS_DATAREQUEST )
         {
             break;

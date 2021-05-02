@@ -45,9 +45,9 @@ typedef struct xPCI2CARDBRIDGENFO{
 //
 ////////////////////////////////////////////////////////////////////////////////
 
-WORD xPCIConfigReadWord(BYTE bus, BYTE slot, BYTE function, BYTE regoffset);
-PCIDEVICEINFO xGetPCIDeviceInfo();
-PCIBRIDGEINFO xGetPCIBridgeInfo();
-PCI2CARDBRIDGEINFO xGetPCItoCardbusInfo();
-void xCheckAllBuses(void);
+//WORD xPCIConfigReadWord(BYTE bus, BYTE slot, BYTE function, BYTE regoffset);
+//PCIDEVICEINFO xGetPCIDeviceInfo();
+//PCIBRIDGEINFO xGetPCIBridgeInfo();
+//PCI2CARDBRIDGEINFO xGetPCItoCardbusInfo();
+//void xCheckAllBuses(void);
 #endif

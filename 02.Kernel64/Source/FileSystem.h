@@ -9,10 +9,10 @@
 #ifndef __FILESYSTEM_H__
 #define __FILESYSTEM_H__
 
-#include "Utility.h"
 #include "Types.h"
 #include "Synchronization.h"
 #include "HardDisk.h"
+#include "Utility.h"
 
 ////////////////////////////////////////////////////////////////////////////////
 //
@@ -202,8 +202,8 @@ typedef struct kFileSystemManagerStruct
     DWORD dwLastAllocatedClusterLinkSectorOffset;
     
     // 파일 시스템 동기화 객체
-    MUTEX stMutex;
-
+    MUTEX stMutex;    
+    
     // 핸들 풀(Handle Pool)의 어드레스
     FILE* pstHandlePool;
 } FILESYSTEMMANAGER;
@@ -219,6 +219,7 @@ BOOL kFormat( void );
 BOOL kMount( void );
 BOOL kGetHDDInformation( HDDINFORMATION* pstInformation);
 
+//  저수준 함수(Low Level Function)
 static BOOL kReadClusterLinkTable( DWORD dwOffset, BYTE* pbBuffer );
 static BOOL kWriteClusterLinkTable( DWORD dwOffset, BYTE* pbBuffer );
 static BOOL kReadCluster( DWORD dwOffset, BYTE* pbBuffer );

@@ -8,10 +8,10 @@
 # 컴파일러 및 링커 정의
 NASM64 = nasm -f elf64
 GCC64 = gcc -c -m64 -ffreestanding
-LD64 = ld.lld -melf_x86_64 -T ../elf_x86_64.x -nostdlib -e Main -Ttext 0x200000
+LD64 = ld -melf_x86_64 -T ../elf_x86_64.x -nostdlib -e Main -Ttext 0x200000
 
 # 바이너리 이미지 생성을 위한 OBJCOPY 옵션 정의
-OBJCOPY64 = llvm-objcopy --binary-architecture x86-64 -j .text -j .data -j .rodata -j .bss  -O binary
+OBJCOPY64 = objcopy -j .text -j .data -j .rodata -j .bss  -O binary
 
 # 디렉터리 정의
 OBJECTDIRECTORY = Temp

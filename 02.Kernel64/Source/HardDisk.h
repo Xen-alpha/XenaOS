@@ -11,6 +11,8 @@
 
 #include "Types.h"
 #include "Synchronization.h"
+#include "Utility.h"
+#include "Console.h"
 
 ////////////////////////////////////////////////////////////////////////////////
 //
@@ -118,8 +120,7 @@ typedef struct kHDDManagerStruct
     volatile BOOL bPrimaryInterruptOccur;
     volatile BOOL bSecondaryInterruptOccur;
     MUTEX stMutex;
-
-
+    
     // HDD 정보
     HDDINFORMATION stHDDInformation;
 } HDDMANAGER;

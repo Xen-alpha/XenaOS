@@ -3,7 +3,7 @@
  *  date    2009/06/28
  *  author  kkamagui 
  *          Copyright(c)2008 All rights reserved by kkamagui
- *  brief   ╥ндц APIC(Local APIC)©║ ╟Э╥ц╣х гЛ╢У фдюо
+ *  brief   К║°Л╩╛ APIC(Local APIC)Л≈░ Й╢─К═╗К░° М≈╓К█■ М▄▄Л²╪
  */
 
 #ifndef __LOCALAPIC_H__
@@ -14,10 +14,10 @@
 
 ////////////////////////////////////////////////////////////////////////////////
 //
-// ╦ее╘╥н
+// К╖╓М│╛К║°
 //
 ////////////////////////////////////////////////////////////////////////////////
-// ╥ндц APIC ╥╧аЖ╫╨ем ©юга╪б ╟Э╥ц ╦ее╘╥н
+// К║°Л╩╛ APIC К═┬Л╖─Л┼╓М└╟ Л≤╓М■└Л┘▀ Й╢─К═╗ К╖╓М│╛К║°
 #define APIC_REGISTER_EOI                           0x0000B0
 #define APIC_REGISTER_SVR                           0x0000F0
 #define APIC_REGISTER_APICID                        0x000020
@@ -31,7 +31,7 @@
 #define APIC_REGISTER_ICR_LOWER                     0x000300
 #define APIC_REGISTER_ICR_UPPER                     0x000310
 
-// юЭ╢ч ╦П╣Е(Delivery Mode) ╟Э╥ц ╦ее╘╥н
+// Л═└К▀╛ К╙╗К⌠°(Delivery Mode) Й╢─К═╗ К╖╓М│╛К║°
 #define APIC_DELIVERYMODE_FIXED                     0x000000
 #define APIC_DELIVERYMODE_LOWESTPRIORITY            0x000100
 #define APIC_DELIVERYMODE_SMI                       0x000200
@@ -40,23 +40,23 @@
 #define APIC_DELIVERYMODE_STARTUP                   0x000600
 #define APIC_DELIVERYMODE_EXTINT                    0x000700
 
-// ╦ЯюШаЖ ╦П╣Е(Destination Mode) ╟Э╥ц ╦ее╘╥н
+// К╙╘Л═│Л╖─ К╙╗К⌠°(Destination Mode) Й╢─К═╗ К╖╓М│╛К║°
 #define APIC_DESTINATIONMODE_PHYSICAL               0x000000
 #define APIC_DESTINATIONMODE_LOGICAL                0x000800
 
-// юЭ╢ч ╩Себ(Delivery Status) ╟Э╥ц ╦ее╘╥н
+// Л═└К▀╛ Л┐│М┐°(Delivery Status) Й╢─К═╗ К╖╓М│╛К║°
 #define APIC_DELIVERYSTATUS_IDLE                    0x000000
 #define APIC_DELIVERYSTATUS_PENDING                 0x001000
 
-// ╥╧╨╖(Level) ╟Э╥ц ╦ее╘╥н
+// К═┬К╡╗(Level) Й╢─К═╗ К╖╓М│╛К║°
 #define APIC_LEVEL_DEASSERT                         0x000000
 #define APIC_LEVEL_ASSERT                           0x004000
 
-// ф╝╦╝╟е ╦П╣Е(Trigger Mode) ╟Э╥ц ╦ее╘╥н
+// М┼╦К╕╛Й╠╟ К╙╗К⌠°(Trigger Mode) Й╢─К═╗ К╖╓М│╛К║°
 #define APIC_TRIGGERMODE_EDGE                       0x000000
 #define APIC_TRIGGERMODE_LEVEL                      0x008000
 
-// ╦ЯюШаЖ ╬Ю╬Н(Destination Shorthand) ╟Э╥ц ╦ее╘╥н
+// К╙╘Л═│Л╖─ Л∙╫Л√╢(Destination Shorthand) Й╢─К═╗ К╖╓М│╛К║°
 #define APIC_DESTINATIONSHORTHAND_NOSHORTHAND       0x000000
 #define APIC_DESTIANTIONSHORTHAND_SELF              0x040000
 #define APIC_DESTINATIONSHORTHAND_ALLINCLUDINGSELF  0x080000
@@ -64,7 +64,7 @@
 
 ////////////////////////////////////////////////////////////////////////////////
 //
-//  гт╪Ж
+//  М∙╗Л┬≤
 //
 ////////////////////////////////////////////////////////////////////////////////
 QWORD kGetLocalAPICBaseAddress( void );

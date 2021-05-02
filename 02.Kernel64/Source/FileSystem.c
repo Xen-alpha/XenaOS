@@ -28,7 +28,7 @@ fWriteHDDSector gs_pfWriteHDDSector = NULL;
 BOOL kInitializeFileSystem( void )
 {
     // 자료구조 초기화와 동기화 객체 초기화
-    memset( &gs_stFileSystemManager, 0, sizeof( gs_stFileSystemManager ) );
+    kMemSet( &gs_stFileSystemManager, 0, sizeof( gs_stFileSystemManager ) );
     kInitializeMutex( &( gs_stFileSystemManager.stMutex ) );
     
     // 하드 디스크를 초기화
@@ -61,7 +61,7 @@ BOOL kInitializeFileSystem( void )
     }
     
     // 핸들 풀을 모두 0으로 설정하여 초기화
-    memset( gs_stFileSystemManager.pstHandlePool, 0, FILESYSTEM_HANDLE_MAXCOUNT * sizeof( FILE ) );    
+    kMemSet( gs_stFileSystemManager.pstHandlePool, 0, FILESYSTEM_HANDLE_MAXCOUNT * sizeof( FILE ) );    
     
     return TRUE;
 }
@@ -85,6 +85,7 @@ BOOL kMount( void )
     if( gs_pfReadHDDSector( TRUE, TRUE, 0, 1, gs_vbTempBuffer ) == FALSE )
     {
         // 동기화 처리
+        kPrintf("Error reading MBR\n");
         kUnlockMutex( &( gs_stFileSystemManager.stMutex ) );
         return FALSE;
     }
@@ -93,6 +94,7 @@ BOOL kMount( void )
     pstMBR = ( MBR* ) gs_vbTempBuffer;
     if( pstMBR->dwSignature != FILESYSTEM_SIGNATURE )
     {
+        kPrintf("Error comparing signature\n");
         // 동기화 처리
         kUnlockMutex( &( gs_stFileSystemManager.stMutex ) );
         return FALSE;
@@ -137,6 +139,7 @@ BOOL kFormat( void )
     pstHDD = ( HDDINFORMATION* ) gs_vbTempBuffer;
     if( gs_pfReadHDDInformation( TRUE, TRUE, pstHDD ) == FALSE )
     {
+        kPrintf("Error reading HDD information\n");
         // 동기화 처리
         kUnlockMutex( &( gs_stFileSystemManager.stMutex ) );
         return FALSE;
@@ -167,6 +170,7 @@ BOOL kFormat( void )
     // MBR 영역 읽기
     if( gs_pfReadHDDSector( TRUE, TRUE, 0, 1, gs_vbTempBuffer ) == FALSE )
     {
+        kPrintf("Error reading MBR\n");
         // 동기화 처리
         kUnlockMutex( &( gs_stFileSystemManager.stMutex ) );
         return FALSE;
@@ -174,7 +178,7 @@ BOOL kFormat( void )
     
     // 파티션 정보와 파일 시스템 정보 설정    
     pstMBR = ( MBR* ) gs_vbTempBuffer;
-    memset( pstMBR->vstPartition, 0, sizeof( pstMBR->vstPartition ) );
+    kMemSet( pstMBR->vstPartition, 0, sizeof( pstMBR->vstPartition ) );
     pstMBR->dwSignature = FILESYSTEM_SIGNATURE;
     pstMBR->dwReservedSectorCount = 0;
     pstMBR->dwClusterLinkSectorCount = dwClusterLinkSectorCount;
@@ -183,19 +187,20 @@ BOOL kFormat( void )
     // MBR 영역에 1 섹터를 씀
     if( gs_pfWriteHDDSector( TRUE, TRUE, 0, 1, gs_vbTempBuffer ) == FALSE )
     {
+        kPrintf("Error writing MBR\n");
         // 동기화 처리
         kUnlockMutex( &( gs_stFileSystemManager.stMutex ) );
         return FALSE;
     }
     
     // MBR 이후부터 루트 디렉터리까지 모두 0으로 초기화
-    memset( gs_vbTempBuffer, 0, 512 );
-    for( i = 0 ; i < ( dwClusterLinkSectorCount + FILESYSTEM_SECTORSPERCLUSTER );
+    kMemSet( gs_vbTempBuffer, 0, 512 );
+    for( i = 1 ; i < ( dwClusterLinkSectorCount + FILESYSTEM_SECTORSPERCLUSTER );
          i++ )
     {
         // 루트 디렉터리(클러스터 0)는 이미 파일 시스템이 사용하고 있으므로,
         // 할당된 것으로 표시
-        if( i == 0 )
+        if( i == 1 )
         {
             ( ( DWORD* ) ( gs_vbTempBuffer ) )[ 0 ] = FILESYSTEM_LASTCLUSTER;
         }
@@ -205,8 +210,9 @@ BOOL kFormat( void )
         }
         
         // 1 섹터씩 씀
-        if( gs_pfWriteHDDSector( TRUE, TRUE, i + 1, 1, gs_vbTempBuffer ) == FALSE )
+        if( gs_pfWriteHDDSector( TRUE, TRUE, i, 1, gs_vbTempBuffer ) == FALSE )
         {
+            kPrintf("Error initiating FS\n");
             // 동기화 처리
             kUnlockMutex( &( gs_stFileSystemManager.stMutex ) );
             return FALSE;
@@ -465,7 +471,7 @@ static BOOL kSetDirectoryEntryData( int iIndex, DIRECTORYENTRY* pstEntry )
     
     // 루트 디렉터리에 있는 해당 데이터를 갱신
     pstRootEntry = ( DIRECTORYENTRY* ) gs_vbTempBuffer;
-    memcpy( pstRootEntry + iIndex, pstEntry, sizeof( DIRECTORYENTRY ) );
+    kMemCpy( pstRootEntry + iIndex, pstEntry, sizeof( DIRECTORYENTRY ) );
 
     // 루트 디렉터리에 씀
     if( kWriteCluster( 0, gs_vbTempBuffer ) == FALSE )
@@ -497,7 +503,7 @@ static BOOL kGetDirectoryEntryData( int iIndex, DIRECTORYENTRY* pstEntry )
     
     // 루트 디렉터리에 있는 해당 데이터를 갱신
     pstRootEntry = ( DIRECTORYENTRY* ) gs_vbTempBuffer;
-    memcpy( pstEntry, pstRootEntry + iIndex, sizeof( DIRECTORYENTRY ) );
+    kMemCpy( pstEntry, pstRootEntry + iIndex, sizeof( DIRECTORYENTRY ) );
     return TRUE;
 }
 
@@ -527,9 +533,9 @@ static int kFindDirectoryEntry( const char* pcFileName, DIRECTORYENTRY* pstEntry
     pstRootEntry = ( DIRECTORYENTRY* ) gs_vbTempBuffer;
     for( i = 0 ; i < FILESYSTEM_MAXDIRECTORYENTRYCOUNT ; i++ )
     {
-        if( memcmp( pstRootEntry[ i ].vcFileName, pcFileName, iLength ) == 0 )
+        if( kMemCmp( pstRootEntry[ i ].vcFileName, pcFileName, iLength ) == 0 )
         {
-            memcpy( pstEntry, pstRootEntry + i, sizeof( DIRECTORYENTRY ) );
+            kMemCpy( pstEntry, pstRootEntry + i, sizeof( DIRECTORYENTRY ) );
             return i;
         }
     }
@@ -541,7 +547,7 @@ static int kFindDirectoryEntry( const char* pcFileName, DIRECTORYENTRY* pstEntry
  */
 void kGetFileSystemInformation( FILESYSTEMMANAGER* pstManager )
 {
-    memcpy( pstManager, &gs_stFileSystemManager, sizeof( gs_stFileSystemManager ) );
+    kMemCpy( pstManager, &gs_stFileSystemManager, sizeof( gs_stFileSystemManager ) );
 }
 
 //==============================================================================
@@ -579,7 +585,7 @@ static void* kAllocateFileDirectoryHandle( void )
 static void kFreeFileDirectoryHandle( FILE* pstFile )
 {
     // 전체 영역을 초기화
-    memset( pstFile, 0, sizeof( FILE ) );
+    kMemSet( pstFile, 0, sizeof( FILE ) );
     
     // 비어있는 타입으로 설정
     pstFile->bType = FILESYSTEM_TYPE_FREE;
@@ -611,7 +617,7 @@ static BOOL kCreateFile( const char* pcFileName, DIRECTORYENTRY* pstEntry,
     }
     
     // 디렉터리 엔트리를 설정
-    memcpy( pstEntry->vcFileName, pcFileName, kStrLen( pcFileName ) + 1 );
+    kMemCpy( pstEntry->vcFileName, pcFileName, kStrLen( pcFileName ) + 1 );
     pstEntry->dwStartClusterIndex = dwCluster;
     pstEntry->dwFileSize = 0;
     
@@ -731,7 +737,7 @@ FILE* kOpenFile( const char* pcFileName, const char* pcMode )
         if( kFreeClusterUntilEnd( dwSecondCluster ) == FALSE )
         {
             // 동기화
-            kUnlockMutex(&( gs_stFileSystemManager.stMutex ) );
+            kUnlockMutex( &( gs_stFileSystemManager.stMutex ) );
             return NULL;
         }
        
@@ -832,7 +838,7 @@ DWORD kReadFile( void* pvBuffer, DWORD dwSize, DWORD dwCount, FILE* pstFile )
         // 클러스터로 이동
         dwCopySize = MIN( FILESYSTEM_CLUSTERSIZE - dwOffsetInCluster, 
                           dwTotalCount - dwReadCount );
-        memcpy( ( char* ) pvBuffer + dwReadCount, 
+        kMemCpy( ( char* ) pvBuffer + dwReadCount, 
                 gs_vbTempBuffer + dwOffsetInCluster, dwCopySize );
 
         // 읽은 바이트 수와 파일 포인터의 위치를 갱신
@@ -956,7 +962,7 @@ DWORD kWriteFile( const void* pvBuffer, DWORD dwSize, DWORD dwCount, FILE* pstFi
             pstFileHandle->dwCurrentClusterIndex = dwAllocatedClusterIndex;
             
             // 새로 할당받았으니 임시 클러스터 버퍼를 0으로 채움
-            memset( gs_vbTempBuffer, 0, FILESYSTEM_LASTCLUSTER );
+            kMemSet( gs_vbTempBuffer, 0, FILESYSTEM_LASTCLUSTER );
         }        
         //======================================================================
         // 한 클러스터를 채우지 못하면 클러스터를 읽어서 임시 클러스터 버퍼로 복사
@@ -980,7 +986,7 @@ DWORD kWriteFile( const void* pvBuffer, DWORD dwSize, DWORD dwCount, FILE* pstFi
         // 클러스터로 이동
         dwCopySize = MIN( FILESYSTEM_CLUSTERSIZE - dwOffsetInCluster, 
                           dwTotalCount - dwWriteCount );
-        memcpy( gs_vbTempBuffer + dwOffsetInCluster, ( char* ) pvBuffer + 
+        kMemCpy( gs_vbTempBuffer + dwOffsetInCluster, ( char* ) pvBuffer + 
                  dwWriteCount, dwCopySize );
         
         // 임시 버퍼에 삽입된 값을 디스크에 씀
@@ -1053,7 +1059,7 @@ BOOL kWriteZero( FILE* pstFile, DWORD dwCount )
     }
     
     // 0으로 채움
-    memset( pbBuffer, 0, FILESYSTEM_CLUSTERSIZE );
+    kMemSet( pbBuffer, 0, FILESYSTEM_CLUSTERSIZE );
     dwRemainCount = dwCount;
     
     // 클러스터 단위로 반복해서 쓰기 수행
@@ -1329,7 +1335,7 @@ int kRemoveFile( const char* pcFileName )
     }
 
     // 디렉터리 엔트리를 빈 것으로 설정
-    memset( &stEntry, 0, sizeof( stEntry ) );
+    kMemSet( &stEntry, 0, sizeof( stEntry ) );
     if( kSetDirectoryEntryData( iDirectoryEntryOffset, &stEntry ) == FALSE )
     {
         // 동기화

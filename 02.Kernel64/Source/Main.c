@@ -17,7 +17,6 @@
 #include "HardDisk.h"
 #include "FileSystem.h"
 #include "SerialPort.h"
-#include "LocalAPIC.h"
 #include "MultiProcessor.h"
 
 // 함수 선언
@@ -89,17 +88,7 @@ void Main( void )
     kEnableInterrupt();
     kPrintf( "PIC Controller And Interrupt Initialize.....[Pass]\n" );
 
-    // 하드 디스크를 초기화
-    if( kInitializeHDD() == TRUE )
-    {
-        kPrintf( "HDD Initialize..............................[%s]\n", "Pass" );
-    }
-    else
-    {
-        kPrintf( "HDD Initialize..............................[%s]\n", "Fail" );
-    }
-
-     // 파일 시스템을 초기화
+     // HDD 및 파일 시스템을 초기화
     if( kInitializeFileSystem() == TRUE )
     {
         kPrintf( "File System Initialize......................[Pass]\n" );

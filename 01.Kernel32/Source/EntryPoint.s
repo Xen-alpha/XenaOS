@@ -18,6 +18,9 @@ START:
     mov ds, ax      ; DS 세그먼트 레지스터에 설정
     mov es, ax      ; ES 세그먼트 레지스터에 설정
     
+    mov ax, 0x0000
+    mov es,ax
+
     cmp byte [es:0x7C09], 0x00
     je .APPLICATIONPROCESSOR_STARTPOINT 
 

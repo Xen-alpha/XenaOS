@@ -9,11 +9,11 @@
 # 컴파일러 및 링커 정의
 
 NASM32 = nasm
-CLANG32 = clang -c -m32 -ffreestanding
-LD32 = ld.lld -melf_i386 -T ../elf_i386.x -nostdlib -e Main -Ttext 0x10200
+GCC32 = gcc -c -m32 -ffreestanding
+LD32 = ld -melf_i386 -T ../elf_i386.x -nostdlib -e Main -Ttext 0x10200
 
 # 바이너리 이미지 생성을 위한 OBJCOPY 옵션 정의
-OBJCOPY32 = llvm-objcopy --binary-architecture i386 -j .text -j .data -j .rodata -j .bss -O binary
+OBJCOPY32 = objcopy -j .text -j .data -j .rodata -j .bss -O binary
 
 # 디렉터리 정의
 OBJECTDIRECTORY = Temp
@@ -68,7 +68,7 @@ ASSEMBLYOBJECTFILES = $(notdir $(patsubst %.asm,%.o,$(ASSEMBLYSOURCEFILES)))
 
 # .c 파일을 .o 파일로 바꾸는 규칙 정의
 %.o: ../$(SOURCEDIRECTORY)/%.c
-	$(CLANG32) -c $<
+	$(GCC32) -c $<
 
 # .asm 파일을 .o 파일로 바꾸는 규칙 정의
 %.o: ../$(SOURCEDIRECTORY)/%.asm
@@ -76,7 +76,7 @@ ASSEMBLYOBJECTFILES = $(notdir $(patsubst %.asm,%.o,$(ASSEMBLYSOURCEFILES)))
 
 # 실제 의존성에 관련된 파일을 생성
 InternalDependency:
-	$(CLANG32) -MM $(CSOURCEFILES) > Dependency.dep
+	$(GCC32) -MM $(CSOURCEFILES) > Dependency.dep
 
 # 실제 커널 이미지를 빌드
 Kernel32.elf: $(CENTRYPOINTOBJECTFILE) $(COBJECTFILES) $(ASSEMBLYOBJECTFILES)
