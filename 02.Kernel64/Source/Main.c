@@ -18,14 +18,20 @@
 #include "FileSystem.h"
 #include "SerialPort.h"
 #include "MultiProcessor.h"
+#include "IOAPIC.h"
+#include "LocalAPIC.h"
+#include "InterruptHandler.h"
+#include "MPConfigurationTable.h"
+#include "SystemCall.h"
 
 // 함수 선언
 void MainForAP(void);
-
+// 멀티 코어 프로세서 또는 멀티 프로세서 모드로 전환하는 함수
+BOOL kChangeToMultiCoreMode( void );
 /**
  *  아래 함수는 C 언어 커널의 시작 부분임
  */
-void Main( void )
+void Main_64( void )
 {
     int iCursorX, iCursorY;
 
@@ -37,6 +43,7 @@ void Main( void )
     *((BYTE *)BOOTSTRAPPROCESSOR_FLAGADDRESS) = 0;
 
     kInitializeConsole(0,24);
+    kConsolePrintString( "Switching...\n" );
     kPrintf ("Switch To IA-32e Mode Success~!!\n" );
     kPrintf( "IA-32e C Language Kernel Start..............[Pass]\n" );
     kPrintf( "Initialize Console..........................[Pass]\n" );
@@ -101,9 +108,29 @@ void Main( void )
     kInitializeSerialPort();
     kPrintf( "Serial Port Initialize......................[Pass]\n" );
     iCursorY++;
+    
+    // 멀티코어 프로세서 모드로 전환
+    // Application Processor 활성화, I/O 모드 활성화, 인터럽트와 태스크 부하 분산
+    // 기능 활성화
+    kPrintf( "Change To MultiCore Processor Mode..........[    ]" );
+    if( kChangeToMultiCoreMode() == TRUE )
+    {
+        kSetCursor( 45, iCursorY++ );
+        kPrintf( "Pass\n" );
+    }
+    else
+    {
+        kSetCursor( 45, iCursorY++ );
+        kPrintf( "Fail\n" );
+    }
+
+        // 시스템 콜에 관련된 MSR을 초기화
+    kPrintf( "System Call MSR Initialize..................[Pass]\n" );
+    iCursorY++;
+    kInitializeSystemCall();
 
     // 유휴 태스크를 생성하고 셸을 시작
-    kCreateTask( TASK_FLAGS_LOWEST | TASK_FLAGS_THREAD | TASK_FLAGS_SYSTEM | TASK_FLAGS_IDLE, 0, 0, ( QWORD ) kIdleTask );
+    kCreateTask( TASK_FLAGS_LOWEST | TASK_FLAGS_THREAD | TASK_FLAGS_SYSTEM | TASK_FLAGS_IDLE, 0, 0, ( QWORD ) kIdleTask, kGetAPICID() );
     kStartConsoleShell();
 }
 
@@ -120,16 +147,96 @@ void MainForAP(void){
     // IDT 테이블을 설정
     kLoadIDTR( IDTR_STARTADDRESS );
 
-    // 1초마다 한번씩 메시지를 출력
-    qwTickCount = kGetTickCount();
-    while( 1 )
+    // 스케줄러 초기화
+    kInitializeScheduler();
+    
+    // 현재 코어의 로컬 APIC를 활성화
+    kEnableSoftwareLocalAPIC();
+
+    // 모든 인터럽트를 수신할 수 있도록 태스크 우선 순위 레지스터를 0으로 설정
+    kSetTaskPriority( 0 );
+
+    // 로컬 APIC의 로컬 벡터 테이블을 초기화
+    kInitializeLocalVectorTable();
+
+    // 인터럽트를 활성화
+    kEnableInterrupt();    
+
+    // 시스템 콜에 관련된 MSR 초기화
+    kInitializeSystemCall();
+
+    // 대칭 I/O 모드 테스트를 위해 Application Processor가 시작한 후 한번만 출력
+    //kPrintf( "Application Processor[APIC ID: %d] Is Activated\n",
+    //       kGetAPICID() );
+    
+    // 유휴 태스크 실행
+    kIdleTask();
+}
+
+/**
+ *  멀티코어 프로세서 또는 멀티 프로세서 모드로 전환하는 함수
+ */
+BOOL kChangeToMultiCoreMode( void )
+{
+    MPCONFIGRUATIONMANAGER* pstMPManager;
+    BOOL bInterruptFlag;
+    int i;
+
+    // Application Processor 활성화
+    if( kStartUpApplicationProcessor() == FALSE )
     {
-        if( kGetTickCount() - qwTickCount > 1000 )
-        {
-            qwTickCount = kGetTickCount();
-            
-            kPrintf( "Application Processor[APIC ID: %d] Is Activated\n",
-                    kGetAPICID() );
-        }
+        return FALSE;
     }
+
+    //--------------------------------------------------------------------------
+    // 대칭 I/O 모드로 전환
+    //--------------------------------------------------------------------------
+    // MP 설정 매니저를 찾아서 PIC 모드인가 확인
+    pstMPManager = kGetMPConfigurationManager();
+    if( pstMPManager->bUsePICMode == TRUE )
+    {
+        // PIC 모드이면 I/O 포트 어드레스 0x22에 0x70을 먼저 전송하고 
+        // I/O 포트 어드레스 0x23에 0x01을 전송하는 방법으로 IMCR 레지스터에 접근하여
+        // PIC 모드 비활성화
+        kOutPortByte( 0x22, 0x70 );
+        kOutPortByte( 0x23, 0x01 );
+    }
+
+    // PIC 컨트롤러의 인터럽트를 모두 마스크하여 인터럽트가 발생할 수 없도록 함
+    kMaskPICInterrupt( 0xFFFF );
+
+    // 프로세서 전체의 로컬 APIC를 활성화
+    kEnableGlobalLocalAPIC();
+    
+    // 현재 코어의 로컬 APIC를 활성화
+    kEnableSoftwareLocalAPIC();
+
+    // 인터럽트를 불가로 설정
+    bInterruptFlag = kSetInterruptFlag( FALSE );
+    
+    // 모든 인터럽트를 수신할 수 있도록 태스크 우선 순위 레지스터를 0으로 설정
+    kSetTaskPriority( 0 );
+
+    // 로컬 APIC의 로컬 벡터 테이블을 초기화
+    kInitializeLocalVectorTable();
+
+    // 대칭 I/O 모드로 변경되었음을 설정
+    kSetSymmetricIOMode( TRUE );
+    
+    // I/O APIC 초기화
+    kInitializeIORedirectionTable();
+        
+    // 이전 인터럽트 플래그를 복원
+    kSetInterruptFlag( bInterruptFlag );
+
+    // 인터럽트 부하 분산 기능 활성화
+    kSetInterruptLoadBalancing( TRUE );
+
+    // 태스크 부하 분산 기능 활성화
+    for( i = 0 ; i < MAXPROCESSORCOUNT ; i++ )
+    {
+        kSetTaskLoadBalancing( i, TRUE );
+    }
+    
+    return TRUE;
 }

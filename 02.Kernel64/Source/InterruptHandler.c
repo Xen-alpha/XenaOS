@@ -17,34 +17,185 @@
 #include "HardDisk.h"
 #include "LocalAPIC.h"
 #include "IOAPIC.h"
+#include "MPConfigurationTable.h"
+
+// 인터럽트 핸들러 자료구조
+static INTERRUPTMANAGER gs_stInterruptManager;
+
+/**
+ *  인터럽트 자료구조 초기화
+ */
+void kInitializeHandler( void )
+{
+    kMemSet( &gs_stInterruptManager, 0, sizeof( gs_stInterruptManager ) );
+}
+
+/**
+ *  인터럽트 처리 모드를 설정
+ */
+void kSetSymmetricIOMode( BOOL bSymmetricIOMode )
+{
+    gs_stInterruptManager.bSymmetricIOMode = bSymmetricIOMode;
+}
+
+/**
+ *  인터럽트 부하 분산 기능을 사용할지 여부를 설정
+ */
+void kSetInterruptLoadBalancing( BOOL bUseLoadBalancing )
+{
+    gs_stInterruptManager.bUseLoadBalancing = bUseLoadBalancing;
+}
+
+/**
+ *  코어 별 인터럽트 처리 횟수를 증가
+ */
+void kIncreaseInterruptCount( int iIRQ )
+{
+    // 코어의 인터럽트 카운트를 증가
+    gs_stInterruptManager.vvqwCoreInterruptCount[ kGetAPICID() ][ iIRQ ]++;
+}
+
+/**
+ *  현재 인터럽트 모드에 맞추어 EOI를 전송
+ */
+void kSendEOI( int iIRQ )
+{
+    // 대칭 I/O 모드가 아니면 PIC 모드이므로, PIC 컨트롤러로 EOI를 전송해야 함
+    if( gs_stInterruptManager.bSymmetricIOMode == FALSE )
+    {
+        kSendEOIToPIC( iIRQ );
+    }
+    // 대칭 I/O 모드이면 로컬 APIC로 EOI를 전송해야 함
+    else
+    {
+        kSendEOIToLocalAPIC();
+    }
+}
+
+/**
+ *  인터럽트 핸들러 자료구조를 반환
+ */
+INTERRUPTMANAGER* kGetInterruptManager( void )
+{
+    return &gs_stInterruptManager;
+}
+
+/**
+ *  인터럽트 부하 분산(Interrupt Load Balancing) 처리
+ */
+void kProcessLoadBalancing( int iIRQ )
+{
+    QWORD qwMinCount = 0xFFFFFFFFFFFFFFFF;
+    int iMinCountCoreIndex;
+    int iCoreCount;
+    int i;
+    BOOL bResetCount = FALSE;
+    BYTE bAPICID;
+    
+    bAPICID = kGetAPICID();
+
+    // 부하 분산 기능이 꺼져 있거나, 부하 분산을 처리할 시점이 아니면 할 필요가 없음
+    if( ( gs_stInterruptManager.vvqwCoreInterruptCount[ bAPICID ][ iIRQ ] == 0 ) ||
+        ( ( gs_stInterruptManager.vvqwCoreInterruptCount[ bAPICID ][ iIRQ ] % 
+            INTERRUPT_LOADBALANCINGDIVIDOR ) != 0 ) ||
+        ( gs_stInterruptManager.bUseLoadBalancing == FALSE ) )
+    {
+        return ;
+    }
+    
+    // 코어의 개수를 구해서 루프를 수행하며 인터럽트 처리 횟수가 가장 작은 코어를 
+    // 선택
+    iMinCountCoreIndex = 0;
+    iCoreCount = kGetProcessorCount();
+    for( i = 0 ; i < iCoreCount ; i++ )
+    {
+        if( ( gs_stInterruptManager.vvqwCoreInterruptCount[ i ][ iIRQ ] <
+                qwMinCount ) )
+        {
+            qwMinCount = gs_stInterruptManager.vvqwCoreInterruptCount[ i ][ iIRQ ];
+            iMinCountCoreIndex = i;
+        }
+        // 전체 카운트가 거의 최대 값에 근접했다면 나중에 카운트를 모두 0으로 설정
+        else if( gs_stInterruptManager.vvqwCoreInterruptCount[ i ][ iIRQ ] >=
+            0xFFFFFFFFFFFFFFFE )
+        {
+            bResetCount = TRUE;
+        }
+    }
+    
+    // I/O 리다이렉션 테이블을 변경하여 가장 인터럽트를 처리한 횟수가 작은 로컬 APIC로 전달
+    kRoutingIRQToAPICID( iIRQ, iMinCountCoreIndex );
+    
+    // 처리한 코어의 카운트가 최댓값에 근접했다면 전체 카운트를 다시 0에서 시작하도록
+    // 변경
+    if( bResetCount == TRUE )
+    {
+        for( i = 0 ; i < iCoreCount ; i++ )
+        {
+            gs_stInterruptManager.vvqwCoreInterruptCount[ i ][ iIRQ ] = 0;
+        }
+    }
+}
 
 /**
  *  공통으로 사용하는 예외 핸들러
  */
 void kCommonExceptionHandler( int iVectorNumber, QWORD qwErrorCode )
 {
-    char vcBuffer[ 3 ] = { 0, };
-
-    // 인터럽트 벡터를 화면 오른쪽 위에 2자리 정수로 출력
-    vcBuffer[ 0 ] = '0' + iVectorNumber / 10;
-    vcBuffer[ 1 ] = '0' + iVectorNumber % 10;
-
+    char vcBuffer[ 100 ];
+    BYTE bAPICID;
+    TCB* pstTask;
+    
+    // 현재 예외가 발생한 코어를 반환
+    bAPICID = kGetAPICID();
+    // 현재 코어에서 실행 중인 태스크를 반환
+    pstTask = kGetRunningTask( bAPICID );
+    
+    // 메시지 출력
     kPrintStringXY( 0, 0, "====================================================" );
     kPrintStringXY( 0, 1, "                 Exception Occur~!!!!               " );
-    kPrintStringXY( 0, 2, "                    Vector:                         " );
-    kPrintStringXY( 27, 2, vcBuffer );
-    kPrintStringXY( 0, 3, "====================================================" );
+    // 예외 벡터와 코어 ID, 에러코드를 출력
+    kSPrintf( vcBuffer,   "     Vector:%d     Core ID:0x%X     ErrorCode:0x%X  ", 
+            iVectorNumber, bAPICID, qwErrorCode );            
+    kPrintStringXY( 0, 2, vcBuffer );    
+    // 태스크 ID를 출력
+    kSPrintf( vcBuffer,   "                Task ID:0x%Q", pstTask->stLink.qwID );
+    kPrintStringXY( 0, 3, vcBuffer );
+    kPrintStringXY( 0, 4, "====================================================" );
 
-    while( 1 ) ;
+    // 유저 레벨 태스크의 경우는 무한 루프를 수행하지 않고 태스크를 종료시키고 다른
+    // 태스크로 전환
+    if( pstTask->qwFlags & TASK_FLAGS_USERLEVEL == TASK_FLAGS_USERLEVEL )
+    {
+        // 태스크 종료
+        kEndTask( pstTask->stLink.qwID );
+        
+        // 무한 루프 수행 
+        // kEndTask() 함수에서 다른 태스크로 전환하므로 실제로 여기는 수행되지 않음
+        while( 1 )
+        {
+            ;
+        }
+    }
+    // 커널 레벨인 경우는 무한 루프 수행
+    else
+    {
+        // 무한 루프 수행
+        while( 1 )
+        {
+            ;
+        }
+    }
 }
 
 /**
- *  공통으로 사용하는 인터럽트 핸들러
+ *  공통으로 사용하는 인터럽트 핸들러 
  */
 void kCommonInterruptHandler( int iVectorNumber )
 {
     char vcBuffer[] = "[INT:  , ]";
     static int g_iCommonInterruptCount = 0;
+    int iIRQ;
 
     //=========================================================================
     // 인터럽트가 발생했음을 알리려고 메시지를 출력하는 부분
@@ -56,10 +207,18 @@ void kCommonInterruptHandler( int iVectorNumber )
     g_iCommonInterruptCount = ( g_iCommonInterruptCount + 1 ) % 10;
     kPrintStringXY( 70, 0, vcBuffer );
     //=========================================================================
+    
+    // 인터럽트 벡터에서 IRQ 번호 추출
+    iIRQ = iVectorNumber - PIC_IRQSTARTVECTOR;
 
     // EOI 전송
-    kSendEOIToPIC( iVectorNumber - PIC_IRQSTARTVECTOR );
-    kSendEOIToLocalAPIC();
+    kSendEOI( iIRQ );
+    
+    // 인터럽트 발생 횟수를 업데이트
+    kIncreaseInterruptCount( iIRQ );
+    
+    // 부하 분산(Load Balancing) 처리
+    kProcessLoadBalancing( iIRQ );
 }
 
 /**
@@ -70,7 +229,8 @@ void kKeyboardHandler( int iVectorNumber )
     char vcBuffer[] = "[INT:  , ]";
     static int g_iKeyboardInterruptCount = 0;
     BYTE bTemp;
-
+    int iIRQ;
+    
     //=========================================================================
     // 인터럽트가 발생했음을 알리려고 메시지를 출력하는 부분
     // 인터럽트 벡터를 화면 왼쪽 위에 2자리 정수로 출력
@@ -82,15 +242,24 @@ void kKeyboardHandler( int iVectorNumber )
     kPrintStringXY( 0, 0, vcBuffer );
     //=========================================================================
 
-    // 키보드 컨트롤러에서 데이터를 읽어 ASCII로 변환 후 큐에 삽입
-    if( kIsOutputBufferFull() == TRUE) {
+    // 키보드 컨트롤러에서 데이터를 읽어서 ASCII로 변환하여 큐에 삽입
+    if( kIsOutputBufferFull() == TRUE )
+    {
         bTemp = kGetKeyboardScanCode();
-        kConvertScanCodeAndPutQueue(bTemp);
+        kConvertScanCodeAndPutQueue( bTemp );
     }
+    
+    // 인터럽트 벡터에서 IRQ 번호 추출
+    iIRQ = iVectorNumber - PIC_IRQSTARTVECTOR;
 
     // EOI 전송
-    kSendEOIToPIC( iVectorNumber - PIC_IRQSTARTVECTOR );
-    kSendEOIToLocalAPIC();
+    kSendEOI( iIRQ );
+    
+    // 인터럽트 발생 횟수를 업데이트
+    kIncreaseInterruptCount( iIRQ );
+    
+    // 부하 분산(Load Balancing) 처리
+    kProcessLoadBalancing( iIRQ );
 }
 
 /**
@@ -100,6 +269,8 @@ void kTimerHandler( int iVectorNumber )
 {
     char vcBuffer[] = "[INT:  , ]";
     static int g_iTimerInterruptCount = 0;
+    int iIRQ;
+    BYTE bCurrentAPICID;
 
     //=========================================================================
     // 인터럽트가 발생했음을 알리려고 메시지를 출력하는 부분
@@ -112,17 +283,27 @@ void kTimerHandler( int iVectorNumber )
     kPrintStringXY( 70, 0, vcBuffer );
     //=========================================================================
     
-    // EOI 전송
-    kSendEOIToPIC( iVectorNumber - PIC_IRQSTARTVECTOR );
-    kSendEOIToLocalAPIC();
+    // 인터럽트 벡터에서 IRQ 번호 추출
+    iIRQ = iVectorNumber - PIC_IRQSTARTVECTOR;
 
-    // 타이머 발생 횟수를 증가
-    g_qwTickCount++;
+    // EOI 전송
+    kSendEOI( iIRQ );
+    
+    // 인터럽트 발생 횟수를 업데이트
+    kIncreaseInterruptCount( iIRQ );
+
+    // IRQ 0 인터럽트 처리는 Bootstrap Processor만 처리
+    bCurrentAPICID = kGetAPICID();
+    if( bCurrentAPICID == 0 )
+    {
+        // 타이머 발생 횟수를 증가
+        g_qwTickCount++;
+    }
 
     // 태스크가 사용한 프로세서의 시간을 줄임
-    kDecreaseProcessorTime();
+    kDecreaseProcessorTime( bCurrentAPICID );
     // 프로세서가 사용할 수 있는 시간을 다 썼다면 태스크 전환 수행
-    if( kIsProcessorTimeExpired() == TRUE )
+    if( kIsProcessorTimeExpired( bCurrentAPICID ) == TRUE )
     {
         kScheduleInInterrupt();
     }
@@ -135,6 +316,7 @@ void kDeviceNotAvailableHandler( int iVectorNumber )
 {
     TCB* pstFPUTask, * pstCurrentTask;
     QWORD qwLastFPUTaskID;
+    BYTE bCurrentAPICID;
 
     //=========================================================================
     // FPU 예외가 발생했음을 알리려고 메시지를 출력하는 부분
@@ -150,12 +332,15 @@ void kDeviceNotAvailableHandler( int iVectorNumber )
     kPrintStringXY( 0, 0, vcBuffer );    
     //=========================================================================
     
+    // 현재 코어의 로컬 APIC ID를 확인
+    bCurrentAPICID = kGetAPICID();
+    
     // CR0 컨트롤 레지스터의 TS 비트를 0으로 설정
     kClearTS();
 
     // 이전에 FPU를 사용한 태스크가 있는지 확인하여, 있다면 FPU의 상태를 태스크에 저장
-    qwLastFPUTaskID = kGetLastFPUUsedTaskID();
-    pstCurrentTask = kGetRunningTask();
+    qwLastFPUTaskID = kGetLastFPUUsedTaskID( bCurrentAPICID );
+    pstCurrentTask = kGetRunningTask( bCurrentAPICID );
     
     // 이전에 FPU를 사용한 것이 자신이면 아무것도 안 함
     if( qwLastFPUTaskID == pstCurrentTask->stLink.qwID )
@@ -185,7 +370,7 @@ void kDeviceNotAvailableHandler( int iVectorNumber )
     }
     
     // FPU를 사용한 태스크 ID를 현재 태스크로 변경
-    kSetLastFPUUsedTaskID( pstCurrentTask->stLink.qwID );
+    kSetLastFPUUsedTaskID( bCurrentAPICID, pstCurrentTask->stLink.qwID );
 }
 
 /**
@@ -196,6 +381,7 @@ void kHDDHandler( int iVectorNumber )
     char vcBuffer[] = "[INT:  , ]";
     static int g_iHDDInterruptCount = 0;
     BYTE bTemp;
+    int iIRQ;
 
     //=========================================================================
     // 인터럽트가 발생했음을 알리려고 메시지를 출력하는 부분
@@ -209,20 +395,18 @@ void kHDDHandler( int iVectorNumber )
     kPrintStringXY( 10, 0, vcBuffer );
     //=========================================================================
 
-    // 첫 번째 PATA 포트의 인터럽트 벡터(IRQ 14) 처리
-    if( iVectorNumber - PIC_IRQSTARTVECTOR == 14 )
-    {
-        // 첫 번째 PATA 포트의 인터럽트 발생 여부를 TRUE로 설정
-        kSetHDDInterruptFlag( TRUE, TRUE );
-    }
-    // 두 번째 PATA 포트의 인터럽트 벡터(IRQ 15) 처리
-    else
-    {
-        // 두 번째 PATA 포트의 인터럽트 발생 여부를 TRUE로 설정
-        kSetHDDInterruptFlag( FALSE, TRUE );
-    }
+    // 첫 번째 PATA 포트의 인터럽트 발생 여부를 TRUE로 설정
+    kSetHDDInterruptFlag( TRUE, TRUE );
     
+    // 인터럽트 벡터에서 IRQ 번호 추출
+    iIRQ = iVectorNumber - PIC_IRQSTARTVECTOR;
+
     // EOI 전송
-    kSendEOIToPIC( iVectorNumber - PIC_IRQSTARTVECTOR );
-    kSendEOIToLocalAPIC();
+    kSendEOI( iIRQ );
+    
+    // 인터럽트 발생 횟수를 업데이트
+    kIncreaseInterruptCount( iIRQ );
+    
+    // 부하 분산(Load Balancing) 처리
+    kProcessLoadBalancing( iIRQ );
 }

@@ -3,13 +3,15 @@
  *  date    2008/12/28
  *  author  kkamagui 
  *          Copyright(c)2008 All rights reserved by kkamagui
- *  brief   ÆäÀÌÂ¡¿¡ °ü·ÃµÈ °¢Á¾ Á¤º¸¸¦ Á¤ÀÇÇÑ ÆÄÀÏ
+ *  brief   í˜ì´ì§•ì— ê´€ë ¨ëœ ê°ì¢… ì •ë³´ë¥¼ ì •ì˜í•œ íŒŒì¼
  */
 
 #include "Page.h"
-
+#include "../../02.Kernel64/Source/Task.h"
+// ë™ì  ë©”ëª¨ë¦¬ ì˜ì—­ì˜ ì‹œì‘ ì–´ë“œë ˆìŠ¤, 1Mbyte ë‹¨ìœ„ë¡œ ì •ë ¬
+#define DYNAMICMEMORY_START_ADDRESS     ((TASK_STACKPOOLADDRESS +0x1fffff) & 0xffe00000) // 64ë¹„íŠ¸ ì»¤ë„ì˜ DynamicMemory.hì™€ ë™ê¸°í™”ë˜ì–´ì•¼ í•¨
 /**
- *	IA-32e ¸ğµå Ä¿³ÎÀ» À§ÇÑ ÆäÀÌÁö Å×ÀÌºí »ı¼º
+ *	IA-32e ëª¨ë“œ ì»¤ë„ì„ ìœ„í•œ í˜ì´ì§€ í…Œì´ë¸” ìƒì„±
  */
 void kInitializePageTables( void )
 {
@@ -17,50 +19,64 @@ void kInitializePageTables( void )
 	PDPTENTRY* pstPDPTEntry;
 	PDENTRY* pstPDEntry;
 	DWORD dwMappingAddress;
+	DWORD dwPageEntryFlags;
 	int i;
 
-	// PML4 Å×ÀÌºí »ı¼º
-	// Ã¹ ¹øÂ° ¿£Æ®¸® ¿Ü¿¡ ³ª¸ÓÁö´Â ¸ğµÎ 0À¸·Î ÃÊ±âÈ­
+	// PML4 í…Œì´ë¸” ìƒì„±
+	// ì²« ë²ˆì§¸ ì—”íŠ¸ë¦¬ ì™¸ì— ë‚˜ë¨¸ì§€ëŠ” ëª¨ë‘ 0ìœ¼ë¡œ ì´ˆê¸°í™”
 	pstPML4TEntry = ( PML4TENTRY* ) 0x100000;
-	kSetPageEntryData( &( pstPML4TEntry[ 0 ] ), 0x00, 0x101000, PAGE_FLAGS_DEFAULT,
-			0 );
+	// í˜ì´ì§€ ì—”íŠ¸ë¦¬ë¥¼ ìœ ì € ë ˆë²¨ë¡œ ì„¤ì •í•˜ì—¬ ìœ ì € ë ˆë²¨ì—ì„œ ì ‘ê·¼ ê°€ëŠ¥í•˜ë„ë¡ ì„¤ì •
+    kSetPageEntryData( &( pstPML4TEntry[ 0 ] ), 0x00, 0x101000, PAGE_FLAGS_DEFAULT | PAGE_FLAGS_US, 0 );
 	for( i = 1 ; i < PAGE_MAXENTRYCOUNT ; i++ )
 	{
 		kSetPageEntryData( &( pstPML4TEntry[ i ] ), 0, 0, 0, 0 );
 	}
 	
-	// ÆäÀÌÁö µğ·ºÅÍ¸® Æ÷ÀÎÅÍ Å×ÀÌºí »ı¼º
-	// ÇÏ³ªÀÇ PDPT·Î 512GByte±îÁö ¸ÅÇÎ °¡´ÉÇÏ¹Ç·Î ÇÏ³ª·Î ÃæºĞÇÔ
-	// 64°³ÀÇ ¿£Æ®¸®¸¦ ¼³Á¤ÇÏ¿© 64GByte±îÁö ¸ÅÇÎÇÔ
+	// í˜ì´ì§€ ë””ë ‰í„°ë¦¬ í¬ì¸í„° í…Œì´ë¸” ìƒì„±
+	// í•˜ë‚˜ì˜ PDPTë¡œ 512GByteê¹Œì§€ ë§¤í•‘ ê°€ëŠ¥í•˜ë¯€ë¡œ í•˜ë‚˜ë¡œ ì¶©ë¶„í•¨
+	// 64ê°œì˜ ì—”íŠ¸ë¦¬ë¥¼ ì„¤ì •í•˜ì—¬ 64GByteê¹Œì§€ ë§¤í•‘í•¨
 	pstPDPTEntry = ( PDPTENTRY* ) 0x101000;
 	for( i = 0 ; i < 64 ; i++ )
 	{
 		kSetPageEntryData( &( pstPDPTEntry[ i ] ), 0, 0x102000 + ( i * PAGE_TABLESIZE ), 
-				PAGE_FLAGS_DEFAULT, 0 );
+				PAGE_FLAGS_DEFAULT | PAGE_FLAGS_US, 0 );
 	}
 	for( i = 64 ; i < PAGE_MAXENTRYCOUNT ; i++ )
 	{
 		kSetPageEntryData( &( pstPDPTEntry[ i ] ), 0, 0, 0, 0 );
 	}
 	
-	// ÆäÀÌÁö µğ·ºÅÍ¸® Å×ÀÌºí »ı¼º
-	// ÇÏ³ªÀÇ ÆäÀÌÁö µğ·ºÅÍ¸®°¡ 1GByte±îÁö ¸ÅÇÎ °¡´É 
-	// ¿©À¯ÀÖ°Ô 64°³ÀÇ ÆäÀÌÁö µğ·ºÅÍ¸®¸¦ »ı¼ºÇÏ¿© ÃÑ 64GB±îÁö Áö¿ø
+	// í˜ì´ì§€ ë””ë ‰í„°ë¦¬ í…Œì´ë¸” ìƒì„±
+	// í•˜ë‚˜ì˜ í˜ì´ì§€ ë””ë ‰í„°ë¦¬ê°€ 1GByteê¹Œì§€ ë§¤í•‘ ê°€ëŠ¥ 
+	// ì—¬ìœ ìˆê²Œ 64ê°œì˜ í˜ì´ì§€ ë””ë ‰í„°ë¦¬ë¥¼ ìƒì„±í•˜ì—¬ ì´ 64GBê¹Œì§€ ì§€ì›
 	pstPDEntry = ( PDENTRY* ) 0x102000;
 	dwMappingAddress = 0;
 	for( i = 0 ; i < PAGE_MAXENTRYCOUNT * 64 ; i++ )
 	{
-		// 32ºñÆ®·Î´Â »óÀ§ ¾îµå·¹½º¸¦ Ç¥ÇöÇÒ ¼ö ¾øÀ¸¹Ç·Î, Mbyte ´ÜÀ§·Î °è»êÇÑ ´ÙÀ½
-		// ÃÖÁ¾ °á°ú¸¦ ´Ù½Ã 4Kbyte·Î ³ª´©¾î 32ºñÆ® ÀÌ»óÀÇ ¾îµå·¹½º¸¦ °è»êÇÔ
-		kSetPageEntryData( &( pstPDEntry[ i ] ), 
-				( i * ( PAGE_DEFAULTSIZE >> 20 ) ) >> 12, dwMappingAddress, 
-				PAGE_FLAGS_DEFAULT | PAGE_FLAGS_PS, 0 );
-		dwMappingAddress += PAGE_DEFAULTSIZE;
+		// ì˜ì—­ì— ë”°ë¼ í˜ì´ì§€ ì—”íŠ¸ë¦¬ì˜ ì†ì„±ì„ ì„¤ì •
+        // ë™ì  ë©”ëª¨ë¦¬ ì˜ì—­ì´ ì‹œì‘í•˜ëŠ” ì˜ì—­ê¹Œì§€ëŠ” ì»¤ë„ ì˜ì—­ì´ë¯€ë¡œ í˜ì´ì§€ì˜ ì†ì„±ì„
+        // ê´€ë¦¬ì(Supervisor)ë¡œ ì„¤ì •í•˜ê³  ê·¸ ì´ìƒì€ ìœ ì €(User)ë¡œ ì„¤ì •
+        if( i < ( ( DWORD ) DYNAMICMEMORY_START_ADDRESS / PAGE_DEFAULTSIZE ) )
+        {
+            dwPageEntryFlags = PAGE_FLAGS_DEFAULT | PAGE_FLAGS_PS;
+        }
+        else
+        {
+            dwPageEntryFlags = PAGE_FLAGS_DEFAULT | PAGE_FLAGS_PS | PAGE_FLAGS_US;
+        }
+        
+        // 32ë¹„íŠ¸ë¡œëŠ” ìƒìœ„ ì–´ë“œë ˆìŠ¤ë¥¼ í‘œí˜„í•  ìˆ˜ ì—†ìœ¼ë¯€ë¡œ, Mbyte ë‹¨ìœ„ë¡œ ê³„ì‚°í•œ ë‹¤ìŒ
+        // ìµœì¢… ê²°ê³¼ë¥¼ ë‹¤ì‹œ 4Kbyteë¡œ ë‚˜ëˆ„ì–´ 32ë¹„íŠ¸ ì´ìƒì˜ ì–´ë“œë ˆìŠ¤ë¥¼ ê³„ì‚°í•¨
+        kSetPageEntryData( &( pstPDEntry[ i ] ), 
+                ( i * ( PAGE_DEFAULTSIZE >> 20 ) ) >> 12, dwMappingAddress, 
+                dwPageEntryFlags, 0 );
+
+        dwMappingAddress += PAGE_DEFAULTSIZE;
 	}	
 }
 
 /**
- *	ÆäÀÌÁö ¿£Æ®¸®¿¡ ±âÁØ ÁÖ¼Ò¿Í ¼Ó¼º ÇÃ·¡±×¸¦ ¼³Á¤
+ *	í˜ì´ì§€ ì—”íŠ¸ë¦¬ì— ê¸°ì¤€ ì£¼ì†Œì™€ ì†ì„± í”Œë˜ê·¸ë¥¼ ì„¤ì •
  */
 void kSetPageEntryData( PTENTRY* pstEntry, DWORD dwUpperBaseAddress,
 		DWORD dwLowerBaseAddress, DWORD dwLowerFlags, DWORD dwUpperFlags )

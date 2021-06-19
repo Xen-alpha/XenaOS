@@ -34,12 +34,16 @@ void kInitializeGDTTableAndTSS( void )
     // TSS 세그먼트 영역 설정, GDT 테이블의 뒤쪽에 위치
     pstTSS = ( TSSSEGMENT* ) ( ( QWORD ) pstEntry + GDT_TABLESIZE );
 
-    // NULL, 64비트 Code/Data, TSS를 위해 총 3 + 16개의 세그먼트를 생성
+    // NULL, 64비트 Code/Data, TSS를 위해 총 9 + 16개의 세그먼트를 생성
     kSetGDTEntry8( &( pstEntry[ 0 ] ), 0, 0, 0, 0, 0 );
-    kSetGDTEntry8( &( pstEntry[ 1 ] ), 0, 0xFFFFF, GDT_FLAGS_UPPER_CODE, 
-            GDT_FLAGS_LOWER_KERNELCODE, GDT_TYPE_CODE );
-    kSetGDTEntry8( &( pstEntry[ 2 ] ), 0, 0xFFFFF, GDT_FLAGS_UPPER_DATA,
-            GDT_FLAGS_LOWER_KERNELDATA, GDT_TYPE_DATA );
+    kSetGDTEntry8( &( pstEntry[ 1 ] ), 0, 0xFFFFF, GDT_FLAGS_UPPER_CODE, GDT_FLAGS_LOWER_KERNELCODE, GDT_TYPE_CODE );
+    kSetGDTEntry8( &( pstEntry[ 2 ] ), 0, 0xFFFFF, GDT_FLAGS_UPPER_DATA, GDT_FLAGS_LOWER_KERNELDATA, GDT_TYPE_DATA );
+    kSetGDTEntry8( &( pstEntry[ 3 ] ), 0, 0xFFFFF, GDT_FLAGS_UPPER_CODE, GDT_FLAGS_LOWER_USERCODE, GDT_TYPE_CODE );
+    kSetGDTEntry8( &( pstEntry[ 4 ] ), 0, 0xFFFFF, GDT_FLAGS_UPPER_DATA, GDT_FLAGS_LOWER_USERDATA, GDT_TYPE_DATA );
+    kSetGDTEntry8( &( pstEntry[ 5 ] ), 0, 0xFFFFF, GDT_FLAGS_UPPER_CODE, GDT_FLAGS_LOWER_SECURITYCODE, GDT_TYPE_CODE );
+    kSetGDTEntry8( &( pstEntry[ 6 ] ), 0, 0xFFFFF, GDT_FLAGS_UPPER_DATA, GDT_FLAGS_LOWER_SECURITYDATA, GDT_TYPE_DATA );
+    kSetGDTEntry8( &( pstEntry[ 7 ] ), 0, 0xFFFFF, GDT_FLAGS_UPPER_CODE, GDT_FLAGS_LOWER_SHELLCODE, GDT_TYPE_CODE );
+    kSetGDTEntry8( &( pstEntry[ 8 ] ), 0, 0xFFFFF, GDT_FLAGS_UPPER_DATA, GDT_FLAGS_LOWER_SHELLDATA, GDT_TYPE_DATA );
     
     // 16개 코어 지원을 위해 16개의 TSS 디스크립터를 생성
     for( i = 0 ; i < MAXPROCESSORCOUNT ; i++ )

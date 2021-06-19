@@ -5,13 +5,12 @@
 # brief     IA-32e 모드 커널 엔트리 포인트에 관련된 소스 파일
 
 [BITS 64]           ; 이하의 코드는 64비트 코드로 설정
-
 SECTION .text       ; text 섹션(세그먼트)을 정의
-
 ; 외부에서 정의된 함수를 쓸 수 있도록 선언함(Import)
-extern Main
+extern Main_64
 ; APIC ID 레지스터의 어드레스와 깨어난 코어의 개수
 extern g_qwAPICIDAddress, g_iWakeUpApplicationProcessorCount
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;   코드 영역
@@ -60,6 +59,6 @@ START:
     ; Bootstrap Processor와 Application Processor가 공통으로 실행하는 영역
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 .BOOTSTRAPPROCESSORSTARTPOINT:
-    call Main           ; C 언어 엔트리 포인트 함수(Main) 호출
+    call Main_64           ; C 언어 엔트리 포인트 함수(Main) 호출
     
     jmp $

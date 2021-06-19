@@ -14,6 +14,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <errno.h>
+#include <unistd.h>
 
 #define BYTESOFSECTOR  512
 
@@ -163,7 +164,7 @@ void WriteKernelInformation( int iTargetFd, int iTotalKernelSectorCount,
     if( lPosition == -1 )
     {
         fprintf( stderr, "lseek fail. Return value = %d, errno = %d, %d\n", 
-            lPosition, errno, SEEK_SET );
+            (int) lPosition, errno, SEEK_SET );
         exit( -1 );
     }
     

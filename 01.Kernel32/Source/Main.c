@@ -12,7 +12,7 @@
 #define BOOTSTRAPPROCESSOR_FLAGADDRESS 0x7C09
 
 // 함수 선언
-void kPrintString( int iX, int iY, const char* pcString );
+void kPrintString_Boot( int iX, int iY, const char* pcString );
 BOOL kInitializeKernel64Area( void );
 BOOL kIsMemoryEnough( void );
 void kCopyKernel64ImageTo2Mbyte( void );
@@ -32,67 +32,67 @@ void Main( void )
         while(1);
     }
 
-    kPrintString( 0, 3, "32bit C Language Kernel Part Start!" );
+    kPrintString_Boot( 0, 3, "32bit C Language Kernel Part Start!" );
 
     // 최소 메모리 크기를 만족하는 지 검사
-    kPrintString( 0, 4, "Minimum Memory Size Check...................[    ]" );
+    kPrintString_Boot( 0, 4, "Minimum Memory Size Check...................[    ]" );
     if( kIsMemoryEnough() == FALSE )
     {
-        kPrintString( 45, 4, "Fail" );
-        kPrintString( 0, 5, "Not Enough Memory~!! MINT64 OS Requires Over "
+        kPrintString_Boot( 45, 4, "Fail" );
+        kPrintString_Boot( 0, 5, "Not Enough Memory~!! MINT64 OS Requires Over "
                 "64Mbyte Memory~!!" );
         while( 1 ) ;
     }
     else
     {
-        kPrintString( 45, 4, "Pass" );
+        kPrintString_Boot( 45, 4, "Pass" );
     }
     
     // IA-32e 모드의 커널 영역을 초기화
-    kPrintString( 0, 5, "IA-32e Kernel Area Initialize...............[    ]" );
+    kPrintString_Boot( 0, 5, "IA-32e Kernel Area Initialize...............[    ]" );
     if( kInitializeKernel64Area() == FALSE )
     {
-        kPrintString( 45, 5, "Fail" );
-        kPrintString( 0, 6, "Kernel Area Initialization Fail~!!" );
+        kPrintString_Boot( 45, 5, "Fail" );
+        kPrintString_Boot( 0, 6, "Kernel Area Initialization Fail~!!" );
         while( 1 ) ;
     }
-    kPrintString( 45, 5, "Pass" );
+    kPrintString_Boot( 45, 5, "Pass" );
 
 	// IA-32e 모드 전환 전 페이지 테이블 생성
-	kPrintString( 0, 6, "IA-32e Page Tables Initialize...............[    ]" );
+	kPrintString_Boot( 0, 6, "IA-32e Page Tables Initialize...............[    ]" );
    	kInitializePageTables();
-   	kPrintString( 45, 6, "Pass" );
+   	kPrintString_Boot( 45, 6, "Pass" );
 
 	// 프로세서 제조사 정보 읽기
     kReadCPUID( 0x00, &dwEAX, &dwEBX, &dwECX, &dwEDX );
     *( DWORD* ) vcVendorString = dwEBX;
     *( ( DWORD* ) vcVendorString + 1 ) = dwEDX;
     *( ( DWORD* ) vcVendorString + 2 ) = dwECX;
-    kPrintString( 0, 7, "Processor Vendor String.....................[            ]" );
-    kPrintString( 45, 7, vcVendorString );
+    kPrintString_Boot( 0, 7, "Processor Vendor String.....................[            ]" );
+    kPrintString_Boot( 45, 7, vcVendorString );
     
     // 64비트 지원 유무 확인
     kReadCPUID( 0x80000001, &dwEAX, &dwEBX, &dwECX, &dwEDX );
-    kPrintString( 0, 8, "64bit Mode Support Check....................[    ]" );
+    kPrintString_Boot( 0, 8, "64bit Mode Support Check....................[    ]" );
     if( dwEDX & ( 1 << 29 ) )
     {
-        kPrintString( 45, 8, "Pass" );
+        kPrintString_Boot( 45, 8, "Pass" );
     }
     else
     {
-        kPrintString( 45, 8, "Fail" );
-        kPrintString( 0, 9, "This processor does not support 64bit mode~!!" );
+        kPrintString_Boot( 45, 8, "Fail" );
+        kPrintString_Boot( 0, 9, "This processor does not support 64bit mode~!!" );
         while( 1 ) ;
     }
     
 
 	// IA-32e 모드 커널을 0x200000(2Mbyte) 어드레스로 이동
-    kPrintString( 0, 9, "Copy IA-32e Kernel To 2M Address............[    ]" );
+    kPrintString_Boot( 0, 9, "Copy IA-32e Kernel To 2M Address............[    ]" );
     kCopyKernel64ImageTo2Mbyte();
-    kPrintString( 45, 9, "Pass" );
+    kPrintString_Boot( 45, 9, "Pass" );
     
     // IA-32e 모드로 전환
-    kPrintString( 0, 10, "Switch To IA-32e Mode" );
+    kPrintString_Boot( 0, 10, "Switch To IA-32e Mode" );
     kSwitchAndExecute64bitKernel();
     // IA-32e 모드로 전환
 
@@ -102,7 +102,7 @@ void Main( void )
 /**
  *  문자열을 X, Y 위치에 출력
  */
-void kPrintString( int iX, int iY, const char* pcString )
+void kPrintString_Boot( int iX, int iY, const char* pcString )
 {
     CHARACTER* pstScreen = ( CHARACTER* ) 0xB8000;
     int i;

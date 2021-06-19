@@ -24,12 +24,14 @@
 #define GDT_TYPE_CODE           0x0A
 #define GDT_TYPE_DATA           0x02
 #define GDT_TYPE_TSS            0x09
+
 #define GDT_FLAGS_LOWER_S       0x10
 #define GDT_FLAGS_LOWER_DPL0    0x00
 #define GDT_FLAGS_LOWER_DPL1    0x20
 #define GDT_FLAGS_LOWER_DPL2    0x40
 #define GDT_FLAGS_LOWER_DPL3    0x60
 #define GDT_FLAGS_LOWER_P       0x80
+
 #define GDT_FLAGS_UPPER_L       0x20
 #define GDT_FLAGS_UPPER_DB      0x40
 #define GDT_FLAGS_UPPER_G       0x80
@@ -40,7 +42,15 @@
         GDT_FLAGS_LOWER_DPL0 | GDT_FLAGS_LOWER_P )
 #define GDT_FLAGS_LOWER_KERNELDATA ( GDT_TYPE_DATA | GDT_FLAGS_LOWER_S | \
         GDT_FLAGS_LOWER_DPL0 | GDT_FLAGS_LOWER_P )
+
 #define GDT_FLAGS_LOWER_TSS ( GDT_FLAGS_LOWER_DPL0 | GDT_FLAGS_LOWER_P )
+
+#define GDT_FLAGS_LOWER_SECURITYCODE ( GDT_TYPE_CODE | GDT_FLAGS_LOWER_S | GDT_FLAGS_LOWER_DPL1 | GDT_FLAGS_LOWER_P )
+#define GDT_FLAGS_LOWER_SECURITYDATA ( GDT_TYPE_DATA | GDT_FLAGS_LOWER_S | GDT_FLAGS_LOWER_DPL1 | GDT_FLAGS_LOWER_P )
+
+#define GDT_FLAGS_LOWER_SHELLCODE ( GDT_TYPE_CODE | GDT_FLAGS_LOWER_S | GDT_FLAGS_LOWER_DPL2 | GDT_FLAGS_LOWER_P )
+#define GDT_FLAGS_LOWER_SHELLDATA ( GDT_TYPE_DATA | GDT_FLAGS_LOWER_S | GDT_FLAGS_LOWER_DPL2 | GDT_FLAGS_LOWER_P )
+
 #define GDT_FLAGS_LOWER_USERCODE ( GDT_TYPE_CODE | GDT_FLAGS_LOWER_S | \
         GDT_FLAGS_LOWER_DPL3 | GDT_FLAGS_LOWER_P )
 #define GDT_FLAGS_LOWER_USERDATA ( GDT_TYPE_DATA | GDT_FLAGS_LOWER_S | \
@@ -52,15 +62,28 @@
 #define GDT_FLAGS_UPPER_TSS ( GDT_FLAGS_UPPER_G )
 
 // 세그먼트 디스크립터 오프셋
+// null 디스크립터는 0x00임
 #define GDT_KERNELCODESEGMENT 0x08
 #define GDT_KERNELDATASEGMENT 0x10
-#define GDT_TSSSEGMENT        0x18
+#define GDT_USERCODESEGMENT 0x18
+#define GDT_USERDATASEGMENT 0x20
+#define GDT_SECURITYCODESEGMENT 0x28
+#define GDT_SECURITYDATASEGMENT 0x30
+#define GDT_SHELLCODESEGMENT 0x38
+#define GDT_SHELLDATASEGMENT 0x40
+#define GDT_TSSSEGMENT        0x48
+
+// 세그먼트 셀렉터에 설정할 RPL
+#define SELECTOR_RPL_0          0x00 // 커널, 디바이스 드라이버
+#define SELECTOR_RPL_1          0x01 // 보안서브커널, 레지스트리 대체 DBMS
+#define SELECTOR_RPL_2          0x02 // 그래픽 쉘 전용
+#define SELECTOR_RPL_3          0x03 // 이것만 유저레벨, 일반 애플리케이션 전용
 
 // 기타 GDT에 관련된 매크로
 // GDTR의 시작 어드레스, 1Mbyte에서 264Kbyte까지는 페이지 테이블 영역
 #define GDTR_STARTADDRESS   0x142000
-// 8바이트 엔트리의 개수, 널 디스크립터/커널 코드/커널 데이터
-#define GDT_MAXENTRY8COUNT  3
+// 8바이트 엔트리의 개수, 널 디스크립터/커널 코드/커널 데이터/유저 코드/유저 데이터/보안 레이어 코드/보안 레이어 데이터/쉘 코드/쉘 데이터
+#define GDT_MAXENTRY8COUNT  9
 // 16바이트 엔트리의 개수, 즉 TSS는 프로세서 또는 코어의 최대 개수만큼 생성
 #define GDT_MAXENTRY16COUNT ( MAXPROCESSORCOUNT )
 // GDT 테이블의 크기

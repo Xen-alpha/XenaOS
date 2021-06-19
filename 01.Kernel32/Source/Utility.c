@@ -3,13 +3,13 @@
  *  date    2009/01/17
  *  author  kkamagui 
  *          Copyright(c)2008 All rights reserved by kkamagui
- *  brief   OS¿¡¼­ »ç¿ëÇÒ À¯Æ¿¸®Æ¼ ÇÔ¼ö¿¡ °ü·ÃµÈ ÆÄÀÏ
+ *  brief   OSì—ì„œ ì‚¬ìš©í•  ìœ í‹¸ë¦¬í‹° í•¨ìˆ˜ì— ê´€ë ¨ëœ íŒŒì¼
  */
 
 #include "Utility.h"
 
 /**
- *  ¸Ş¸ğ¸®¸¦ Æ¯Á¤ °ªÀ¸·Î Ã¤¿ò
+ *  ë©”ëª¨ë¦¬ë¥¼ íŠ¹ì • ê°’ìœ¼ë¡œ ì±„ì›€
  */
 void memset( void* pvDestination, BYTE bData, int iSize )
 {
@@ -23,9 +23,9 @@ void memset( void* pvDestination, BYTE bData, int iSize )
 }
 
 /**
- *  ¸Ş¸ğ¸® º¹»ç
+ *  ë©”ëª¨ë¦¬ ë³µì‚¬
  */
-int memcpy( void* pvDestination, const void* pvSource, int iSize )
+void *memcpy( void* pvDestination, const void* pvSource, int iSize )
 {
     int i;
     
@@ -34,11 +34,11 @@ int memcpy( void* pvDestination, const void* pvSource, int iSize )
         ( ( char* ) pvDestination )[ i ] = ( ( char* ) pvSource )[ i ];
     }
     
-    return iSize;
+    return pvDestination;
 }
 
 /**
- *  ¸Ş¸ğ¸® ºñ±³
+ *  ë©”ëª¨ë¦¬ ë¹„êµ
  */
 int memcmp( const void* pvDestination, const void* pvSource, int iSize )
 {
@@ -54,4 +54,14 @@ int memcmp( const void* pvDestination, const void* pvSource, int iSize )
         }
     }
     return 0;
+}
+void *memmove(void* dest, const void  *src, int iSize){
+    int i;
+    
+    for( i = 0 ; i < iSize ; i++ )
+    {
+        ( ( char* ) dest )[ i ] = ( ( char* ) src )[ i ];
+    }
+    
+    return dest;
 }

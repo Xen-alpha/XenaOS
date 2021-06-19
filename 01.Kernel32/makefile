@@ -9,11 +9,11 @@
 # 컴파일러 및 링커 정의
 
 NASM32 = nasm
-GCC32 = gcc -c -m32 -ffreestanding
-LD32 = ld -melf_i386 -T ../elf_i386.x -nostdlib -e Main -Ttext 0x10200
+GCC32 = cc -m32 -ffreestanding
+LD32 = ld.lld -melf_i386 -T ../elf_i386.x -nostdlib -e Main -Ttext 0x10200
 
 # 바이너리 이미지 생성을 위한 OBJCOPY 옵션 정의
-OBJCOPY32 = objcopy -j .text -j .data -j .rodata -j .bss -O binary
+OBJCOPY32 = llvm-objcopy -j .text -j .data -j .rodata -j .bss -O binary
 
 # 디렉터리 정의
 OBJECTDIRECTORY = Temp

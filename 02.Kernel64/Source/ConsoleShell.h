@@ -10,6 +10,8 @@
 #define __CONSOLESHELL_H__
 
 #include "Types.h"
+#include "List.h"
+#include "Synchronization.h"
 
 ////////////////////////////////////////////////////////////////////////////////
 //
@@ -117,4 +119,12 @@ static void kShowMPConfigurationTable(const char* pcParameterBuffer);
 static void kStartApplicationProcessor(const char* pcParameterBuffer);
 static void kStartSymmetricIOMode( const char* pcParameterBuffer );
 static void kShowIRQINTINMappingTable( const char* pcParameterBuffer );
+
+static void kShowInterruptProcessingCount( const char* pcParameterBuffer );
+static void kStartInterruptLoadBalancing( const char* pcParameterBuffer );
+
+static void kStartTaskLoadBalancing( const char* pcParameterBuffer );
+static void kChangeTaskAffinity( const char* pcParameterBuffer );
+
+static void kTestSystemCall( const char* pcParameterBuffer );
 #endif /*__CONSOLESHELL_H__*/

@@ -1,4 +1,8 @@
 Main.o: ../Source/Main.c ../Source/Types.h ../Source/Utility.h \
  ../Source/Page.h ../Source/ModeSwitch.h
-Page.o: ../Source/Page.c ../Source/Page.h ../Source/Types.h
+Page.o: ../Source/Page.c ../Source/Page.h ../Source/Types.h \
+ ../Source/../../02.Kernel64/Source/Task.h \
+ ../Source/../../02.Kernel64/Source/Types.h \
+ ../Source/../../02.Kernel64/Source/List.h \
+ ../Source/../../02.Kernel64/Source/Synchronization.h
 Utility.o: ../Source/Utility.c ../Source/Utility.h ../Source/Types.h

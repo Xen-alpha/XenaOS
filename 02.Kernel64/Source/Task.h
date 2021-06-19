@@ -3,7 +3,7 @@
  *  date    2009/02/19
  *  author  kkamagui 
  *          Copyright(c)2008 All rights reserved by kkamagui
- *  brief   ÅÂ½ºÅ©¸¦ Ã³¸®ÇÏ´Â ÇÔ¼ö¿¡ °ü·ÃµÈ ÆÄÀÏ
+ *  brief   íƒœìŠ¤í¬ë¥¼ ì²˜ë¦¬í•˜ëŠ” í•¨ìˆ˜ì— ê´€ë ¨ëœ íŒŒì¼
  */
 
 #ifndef __TASK_H__
@@ -15,14 +15,14 @@
 
 ////////////////////////////////////////////////////////////////////////////////
 //
-// ¸ÅÅ©·Î
+// ë§¤í¬ë¡œ
 //
 ////////////////////////////////////////////////////////////////////////////////
-// SS, RSP, RFLAGS, CS, RIP + ISR¿¡¼­ ÀúÀåÇÏ´Â 19°³ÀÇ ·¹Áö½ºÅÍ
+// SS, RSP, RFLAGS, CS, RIP + ISRì—ì„œ ì €ì¥í•˜ëŠ” 19ê°œì˜ ë ˆì§€ìŠ¤í„°
 #define TASK_REGISTERCOUNT     ( 5 + 19 )
 #define TASK_REGISTERSIZE       8
 
-// Context ÀÚ·á±¸Á¶ÀÇ ·¹Áö½ºÅÍ ¿ÀÇÁ¼Â
+// Context ìë£Œêµ¬ì¡°ì˜ ë ˆì§€ìŠ¤í„° ì˜¤í”„ì…‹
 #define TASK_GSOFFSET           0
 #define TASK_FSOFFSET           1
 #define TASK_ESOFFSET           2
@@ -48,24 +48,26 @@
 #define TASK_RSPOFFSET          22
 #define TASK_SSOFFSET           23
 
-// ÅÂ½ºÅ© Ç®ÀÇ ¾îµå·¹½º
+// íƒœìŠ¤í¬ í’€ì˜ ì–´ë“œë ˆìŠ¤
 #define TASK_TCBPOOLADDRESS     0x800000
 #define TASK_MAXCOUNT           1024
 
-// ½ºÅÃ Ç®°ú ½ºÅÃÀÇ Å©±â
+// ìŠ¤íƒ í’€ê³¼ ìŠ¤íƒì˜ í¬ê¸°
 #define TASK_STACKPOOLADDRESS   ( TASK_TCBPOOLADDRESS + sizeof( TCB ) * TASK_MAXCOUNT )
-#define TASK_STACKSIZE          8192
+#define TASK_STACKSIZE          ( 64 * 1024 )
 
-// À¯È¿ÇÏÁö ¾ÊÀº ÅÂ½ºÅ© ID
+// ìœ íš¨í•˜ì§€ ì•Šì€ íƒœìŠ¤í¬ ID
 #define TASK_INVALIDID          0xFFFFFFFFFFFFFFFF
 
-// ÅÂ½ºÅ©°¡ ÃÖ´ë·Î ¾µ ¼ö ÀÖ´Â ÇÁ·Î¼¼¼­ ½Ã°£(5 ms)
+// íƒœìŠ¤í¬ê°€ ìµœëŒ€ë¡œ ì“¸ ìˆ˜ ìˆëŠ” í”„ë¡œì„¸ì„œ ì‹œê°„(5 ms)
 #define TASK_PROCESSORTIME      5
 
-// ÁØºñ ¸®½ºÆ®ÀÇ ¼ö
+// ì¤€ë¹„ ë¦¬ìŠ¤íŠ¸ì˜ ìˆ˜
 #define TASK_MAXREADYLISTCOUNT  5
 
-// ÅÂ½ºÅ©ÀÇ ¿ì¼± ¼øÀ§
+// *************************************************************
+// bit 63~59: task stat, bit 0~7: task priority, bit 58~57: DPL(privilage flag)
+// íƒœìŠ¤í¬ì˜ ìš°ì„  ìˆœìœ„
 #define TASK_FLAGS_HIGHEST            0
 #define TASK_FLAGS_HIGH               1
 #define TASK_FLAGS_MEDIUM             2
@@ -73,170 +75,200 @@
 #define TASK_FLAGS_LOWEST             4
 #define TASK_FLAGS_WAIT               0xFF          
 
-// ÅÂ½ºÅ©ÀÇ ÇÃ·¡±×
+// íƒœìŠ¤í¬ì˜ í”Œë˜ê·¸
 #define TASK_FLAGS_ENDTASK            0x8000000000000000
 #define TASK_FLAGS_SYSTEM             0x4000000000000000
 #define TASK_FLAGS_PROCESS            0x2000000000000000
 #define TASK_FLAGS_THREAD             0x1000000000000000
 #define TASK_FLAGS_IDLE               0x0800000000000000
+#define TASK_FLAGS_USERLEVEL          0x0600000000000000
+#define TASK_FLAGS_SHELLLEVEL         0x0400000000000000
+#define TASK_FLAGS_SECURITYLEVEL      0x0200000000000000
 
-// ÇÔ¼ö ¸ÅÅ©·Î
+//***************************************************************
+
+// í•¨ìˆ˜ ë§¤í¬ë¡œ
 #define GETPRIORITY( x )        ( ( x ) & 0xFF )
 #define SETPRIORITY( x, priority )  ( ( x ) = ( ( x ) & 0xFFFFFFFFFFFFFF00 ) | \
         ( priority ) )
 #define GETTCBOFFSET( x )       ( ( x ) & 0xFFFFFFFF )
 
-// ÀÚ½Ä ½º·¹µå ¸µÅ©¿¡ ¿¬°áµÈ stThreadLink Á¤º¸¿¡¼­ ÅÂ½ºÅ© ÀÚ·á±¸Á¶(TCB) À§Ä¡¸¦ 
-// °è»êÇÏ¿© ¹İÈ¯ÇÏ´Â ¸ÅÅ©·Î
-#define GETTCBFROMTHREADLINK( x )   ( TCB* ) ( ( QWORD ) ( x ) - offsetof( TCB, stThreadLink ) )
+// ìì‹ ìŠ¤ë ˆë“œ ë§í¬ì— ì—°ê²°ëœ stThreadLink ì •ë³´ì—ì„œ íƒœìŠ¤í¬ ìë£Œêµ¬ì¡°(TCB) ìœ„ì¹˜ë¥¼ 
+// ê³„ì‚°í•˜ì—¬ ë°˜í™˜í•˜ëŠ” ë§¤í¬ë¡œ
+#define GETTCBFROMTHREADLINK( x )   ( TCB* ) ( ( QWORD ) ( x ) - offsetof( TCB, \
+                                      stThreadLink ) )
+
+// í”„ë¡œì„¸ì„œ ì¹œí™”ë„ í•„ë“œì— ì•„ë˜ì˜ ê°’ì´ ì„¤ì •ë˜ë©´, í•´ë‹¹ íƒœìŠ¤í¬ëŠ” íŠ¹ë³„í•œ ìš”êµ¬ì‚¬í•­ì´ ì—†ëŠ” 
+// ê²ƒìœ¼ë¡œ íŒë‹¨í•˜ê³  íƒœìŠ¤í¬ ë¶€í•˜ ë¶„ì‚° ìˆ˜í–‰
+#define TASK_LOADBALANCINGID    0xFF
 
 ////////////////////////////////////////////////////////////////////////////////
 //
-// ±¸Á¶Ã¼
+// êµ¬ì¡°ì²´
 //
 ////////////////////////////////////////////////////////////////////////////////
-// 1¹ÙÀÌÆ®·Î Á¤·Ä
+// 1ë°”ì´íŠ¸ë¡œ ì •ë ¬
 #pragma pack( push, 1 )
 
-// ÄÜÅØ½ºÆ®¿¡ °ü·ÃµÈ ÀÚ·á±¸Á¶
+// ì½˜í…ìŠ¤íŠ¸ì— ê´€ë ¨ëœ ìë£Œêµ¬ì¡°
 typedef struct kContextStruct
 {
     QWORD vqRegister[ TASK_REGISTERCOUNT ];
 } CONTEXT;
 
-// ÅÂ½ºÅ©(ÇÁ·Î¼¼½º ¹× ½º·¹µå)ÀÇ »óÅÂ¸¦ °ü¸®ÇÏ´Â ÀÚ·á±¸Á¶
-// FPU ÄÜÅØ½ºÆ®°¡ Ãß°¡µÇ¾ú±â ¶§¹®¿¡ ÀÚ·á±¸Á¶ÀÇ Å©±â°¡ 16ÀÇ ¹è¼ö·Î Á¤·ÄµÇ¾î¾ß ÇÔ
+// íƒœìŠ¤í¬(í”„ë¡œì„¸ìŠ¤ ë° ìŠ¤ë ˆë“œ)ì˜ ìƒíƒœë¥¼ ê´€ë¦¬í•˜ëŠ” ìë£Œêµ¬ì¡°
+// FPU ì½˜í…ìŠ¤íŠ¸ê°€ ì¶”ê°€ë˜ì—ˆê¸° ë•Œë¬¸ì— ìë£Œêµ¬ì¡°ì˜ í¬ê¸°ê°€ 16ì˜ ë°°ìˆ˜ë¡œ ì •ë ¬ë˜ì–´ì•¼ í•¨
 typedef struct kTaskControlBlockStruct
 {
-    // ´ÙÀ½ µ¥ÀÌÅÍÀÇ À§Ä¡¿Í ID
+    // ë‹¤ìŒ ë°ì´í„°ì˜ ìœ„ì¹˜ì™€ ID
     LISTLINK stLink;
     
-    // ÇÃ·¡±×
+    // í”Œë˜ê·¸
     QWORD qwFlags;
-
-    // ÇÁ·Î¼¼½º ¸Ş¸ğ¸® ¿µ¿ªÀÇ ½ÃÀÛ°ú Å©±â
+    
+    // í”„ë¡œì„¸ìŠ¤ ë©”ëª¨ë¦¬ ì˜ì—­ì˜ ì‹œì‘ê³¼ í¬ê¸°
     void* pvMemoryAddress;
     QWORD qwMemorySize;
 
     //==========================================================================
-    // ÀÌÇÏ ½º·¹µå Á¤º¸
+    // ì´í•˜ ìŠ¤ë ˆë“œ ì •ë³´
     //==========================================================================
-    // ÀÚ½Ä ½º·¹µåÀÇ À§Ä¡¿Í ID
+    // ìì‹ ìŠ¤ë ˆë“œì˜ ìœ„ì¹˜ì™€ ID
     LISTLINK stThreadLink;
-
-    // ºÎ¸ğ ÇÁ·Î¼¼½ºÀÇ ID
+    
+    // ë¶€ëª¨ í”„ë¡œì„¸ìŠ¤ì˜ ID
     QWORD qwParentProcessID;
     
-    // FPU ÄÜÅØ½ºÆ®´Â 16ÀÇ ¹è¼ö·Î Á¤·ÄµÇ¾î¾ß ÇÏ¹Ç·Î, ¾ÕÀ¸·Î Ãß°¡ÇÒ µ¥ÀÌÅÍ´Â ÇöÀç ¶óÀÎ
-    // ¾Æ·¡¿¡ Ãß°¡ÇØ¾ß ÇÔ
+    // FPU ì½˜í…ìŠ¤íŠ¸ëŠ” 16ì˜ ë°°ìˆ˜ë¡œ ì •ë ¬ë˜ì–´ì•¼ í•˜ë¯€ë¡œ, ì•ìœ¼ë¡œ ì¶”ê°€í•  ë°ì´í„°ëŠ” í˜„ì¬ ë¼ì¸
+    // ì•„ë˜ì— ì¶”ê°€í•´ì•¼ í•¨
     QWORD vqwFPUContext[ 512 / 8 ]; 
 
-    // ÀÚ½Ä ½º·¹µåÀÇ ¸®½ºÆ®
+    // ìì‹ ìŠ¤ë ˆë“œì˜ ë¦¬ìŠ¤íŠ¸
     LIST stChildThreadList;
 
-    // ÄÜÅØ½ºÆ®
+    // ì½˜í…ìŠ¤íŠ¸ì™€ ìŠ¤íƒ
     CONTEXT stContext;
-
-    // ½ºÅÃÀÇ ¾îµå·¹½º¿Í Å©±â
     void* pvStackAddress;
     QWORD qwStackSize;
-
-    // FPU »ç¿ë ¿©ºÎ
+    
+    // FPU ì‚¬ìš© ì—¬ë¶€
     BOOL bFPUUsed;
     
-    // TCB ÀüÃ¼¸¦ 16¹ÙÀÌÆ® ¹è¼ö·Î ¸ÂÃß±â À§ÇÑ ÆĞµù
-    char vcPadding[ 11 ];
+    // í”„ë¡œì„¸ì„œ ì¹œí™”ë„(Affinity)
+    BYTE bAffinity; 
+    
+    // í˜„ì¬ íƒœìŠ¤í¬ë¥¼ ìˆ˜í–‰í•˜ëŠ” ì½”ì–´ì˜ ë¡œì»¬ APIC ID
+    BYTE bAPICID;
+    
+    // TCB ì „ì²´ë¥¼ 16ë°”ì´íŠ¸ ë°°ìˆ˜ë¡œ ë§ì¶”ê¸° ìœ„í•œ íŒ¨ë”©
+    char vcPadding[ 9 ];
 } TCB;
 
-// TCB Ç®ÀÇ »óÅÂ¸¦ °ü¸®ÇÏ´Â ÀÚ·á±¸Á¶
+// TCB í’€ì˜ ìƒíƒœë¥¼ ê´€ë¦¬í•˜ëŠ” ìë£Œêµ¬ì¡°
 typedef struct kTCBPoolManagerStruct
 {
-    // ÅÂ½ºÅ© Ç®¿¡ ´ëÇÑ Á¤º¸
+    // ìë£Œêµ¬ì¡° ë™ê¸°í™”ë¥¼ ìœ„í•œ ìŠ¤í•€ë½
+    SPINLOCK stSpinLock;
+    
+    // íƒœìŠ¤í¬ í’€ì— ëŒ€í•œ ì •ë³´
     TCB* pstStartAddress;
     int iMaxCount;
     int iUseCount;
     
-    // TCB°¡ ÇÒ´çµÈ È½¼ö
+    // TCBê°€ í• ë‹¹ëœ íšŸìˆ˜
     int iAllocatedCount;
 } TCBPOOLMANAGER;
 
-// ½ºÄÉÁÙ·¯ÀÇ »óÅÂ¸¦ °ü¸®ÇÏ´Â ÀÚ·á±¸Á¶
+// ìŠ¤ì¼€ì¤„ëŸ¬ì˜ ìƒíƒœë¥¼ ê´€ë¦¬í•˜ëŠ” ìë£Œêµ¬ì¡°
 typedef struct kSchedulerStruct
 {
-    // ÇöÀç ¼öÇà ÁßÀÎ ÅÂ½ºÅ©
+    // ìë£Œêµ¬ì¡° ë™ê¸°í™”ë¥¼ ìœ„í•œ ìŠ¤í•€ë½
+    SPINLOCK stSpinLock;
+    
+    // í˜„ì¬ ìˆ˜í–‰ ì¤‘ì¸ íƒœìŠ¤í¬
     TCB* pstRunningTask;
     
-    // ÇöÀç ¼öÇà ÁßÀÎ ÅÂ½ºÅ©°¡ »ç¿ëÇÒ ¼ö ÀÖ´Â ÇÁ·Î¼¼¼­ ½Ã°£
+    // í˜„ì¬ ìˆ˜í–‰ ì¤‘ì¸ íƒœìŠ¤í¬ê°€ ì‚¬ìš©í•  ìˆ˜ ìˆëŠ” í”„ë¡œì„¸ì„œ ì‹œê°„
     int iProcessorTime;
     
-     // ½ÇÇàÇÒ ÅÂ½ºÅ©°¡ ÁØºñÁßÀÎ ¸®½ºÆ®, ÅÂ½ºÅ©ÀÇ ¿ì¼± ¼øÀ§¿¡ µû¶ó ±¸ºĞ
+    // ì‹¤í–‰í•  íƒœìŠ¤í¬ê°€ ì¤€ë¹„ì¤‘ì¸ ë¦¬ìŠ¤íŠ¸, íƒœìŠ¤í¬ì˜ ìš°ì„  ìˆœìœ„ì— ë”°ë¼ êµ¬ë¶„
     LIST vstReadyList[ TASK_MAXREADYLISTCOUNT ];
 
-    // Á¾·áÇÒ ÅÂ½ºÅ©°¡ ´ë±âÁßÀÎ ¸®½ºÆ®
+    // ì¢…ë£Œí•  íƒœìŠ¤í¬ê°€ ëŒ€ê¸°ì¤‘ì¸ ë¦¬ìŠ¤íŠ¸
     LIST stWaitList;
     
-    // °¢ ¿ì¼± ¼øÀ§º°·Î ÅÂ½ºÅ©¸¦ ½ÇÇàÇÑ È½¼ö¸¦ ÀúÀåÇÏ´Â ÀÚ·á±¸Á¶
+    // ê° ìš°ì„  ìˆœìœ„ë³„ë¡œ íƒœìŠ¤í¬ë¥¼ ì‹¤í–‰í•œ íšŸìˆ˜ë¥¼ ì €ì¥í•˜ëŠ” ìë£Œêµ¬ì¡°
     int viExecuteCount[ TASK_MAXREADYLISTCOUNT ];
     
-    // ÇÁ·Î¼¼¼­ ºÎÇÏ¸¦ °è»êÇÏ±â À§ÇÑ ÀÚ·á±¸Á¶
+    // í”„ë¡œì„¸ì„œ ë¶€í•˜ë¥¼ ê³„ì‚°í•˜ê¸° ìœ„í•œ ìë£Œêµ¬ì¡°
     QWORD qwProcessorLoad;
     
-    // À¯ÈŞ ÅÂ½ºÅ©(Idle Task)¿¡¼­ »ç¿ëÇÑ ÇÁ·Î¼¼¼­ ½Ã°£
+    // ìœ íœ´ íƒœìŠ¤í¬(Idle Task)ì—ì„œ ì‚¬ìš©í•œ í”„ë¡œì„¸ì„œ ì‹œê°„
     QWORD qwSpendProcessorTimeInIdleTask;
-
-    // ¸¶Áö¸·À¸·Î FPU¸¦ »ç¿ëÇÑ ÅÂ½ºÅ©ÀÇ ID
+    
+    // ë§ˆì§€ë§‰ìœ¼ë¡œ FPUë¥¼ ì‚¬ìš©í•œ íƒœìŠ¤í¬ì˜ ID
     QWORD qwLastFPUUsedTaskID;
+    
+    // ë¶€í•˜ ë¶„ì‚° ê¸°ëŠ¥ ì‚¬ìš© ì—¬ë¶€
+    BOOL bUseLoadBalancing;
 } SCHEDULER;
 
 #pragma pack( pop )
 
 ////////////////////////////////////////////////////////////////////////////////
 //
-// ÇÔ¼ö
+// í•¨ìˆ˜
 //
 ////////////////////////////////////////////////////////////////////////////////
 //==============================================================================
-//  ÅÂ½ºÅ© Ç®°ú ÅÂ½ºÅ© °ü·Ã
+//  íƒœìŠ¤í¬ í’€ê³¼ íƒœìŠ¤í¬ ê´€ë ¨
 //==============================================================================
 static void kInitializeTCBPool( void );
 static TCB* kAllocateTCB( void );
 static void kFreeTCB( QWORD qwID );
-TCB* kCreateTask( QWORD qwFlags, void* pvMemoryAddress, QWORD qwMemorySize, QWORD qwEntryPointAddress );
-static void kSetUpTask( TCB* pstTCB, QWORD qwFlags, QWORD qwEntryPointAddress, void* pvStackAddress, QWORD qwStackSize );
+TCB* kCreateTask( QWORD qwFlags, void* pvMemoryAddress, QWORD qwMemorySize, 
+                  QWORD qwEntryPointAddress, BYTE bAffinity );
+static void kSetUpTask( TCB* pstTCB, QWORD qwFlags, QWORD qwEntryPointAddress,
+        void* pvStackAddress, QWORD qwStackSize );
 
 //==============================================================================
-//  ½ºÄÉÁÙ·¯ °ü·Ã
+//  ìŠ¤ì¼€ì¤„ëŸ¬ ê´€ë ¨
 //==============================================================================
 void kInitializeScheduler( void );
-void kSetRunningTask( TCB* pstTask );
-TCB* kGetRunningTask( void );
-static TCB* kGetNextTaskToRun( void );
-static BOOL kAddTaskToReadyList( TCB* pstTask );
-void kSchedule( void );
+void kSetRunningTask( BYTE bAPICID, TCB* pstTask );
+TCB* kGetRunningTask( BYTE bAPICID );
+static TCB* kGetNextTaskToRun( BYTE bAPICID );
+static BOOL kAddTaskToReadyList( BYTE bAPICID, TCB* pstTask );
+BOOL kSchedule( void );
 BOOL kScheduleInInterrupt( void );
-void kDecreaseProcessorTime( void );
-BOOL kIsProcessorTimeExpired( void );
-static TCB* kRemoveTaskFromReadyList( QWORD qwTaskID );
+void kDecreaseProcessorTime( BYTE bAPICID );
+BOOL kIsProcessorTimeExpired( BYTE bAPICID );
+static TCB* kRemoveTaskFromReadyList( BYTE bAPICID, QWORD qwTaskID );
+static BOOL kFindSchedulerOfTaskAndLock( QWORD qwTaskID, BYTE* pbAPICID );
 BOOL kChangePriority( QWORD qwID, BYTE bPriority );
 BOOL kEndTask( QWORD qwTaskID );
 void kExitTask( void );
-int kGetReadyTaskCount( void );
-int kGetTaskCount( void );
+int kGetReadyTaskCount( BYTE bAPICID );
+int kGetTaskCount( BYTE bAPICID );
 TCB* kGetTCBInTCBPool( int iOffset );
 BOOL kIsTaskExist( QWORD qwID );
-QWORD kGetProcessorLoad( void );
+QWORD kGetProcessorLoad( BYTE bAPICID );
 static TCB* kGetProcessByThread( TCB* pstThread );
+void kAddTaskToSchedulerWithLoadBalancing( TCB* pstTask );
+static BYTE kFindSchedulerOfMinumumTaskCount( const TCB* pstTask );
+BYTE kSetTaskLoadBalancing( BYTE bAPICID, BOOL bUseLoadBalancing );
+BOOL kChangeProcessorAffinity( QWORD qwTaskID, BYTE bAffinity );
 
 //==============================================================================
-//  À¯ÈŞ ÅÂ½ºÅ© °ü·Ã
+//  ìœ íœ´ íƒœìŠ¤í¬ ê´€ë ¨
 //==============================================================================
 void kIdleTask( void );
-void kHaltProcessorByLoad( void );
+void kHaltProcessorByLoad( BYTE bAPICID );
 
 //==============================================================================
-//  FPU °ü·Ã
+//  FPU ê´€ë ¨
 //==============================================================================
-QWORD kGetLastFPUUsedTaskID( void );
-void kSetLastFPUUsedTaskID( QWORD qwTaskID );
+QWORD kGetLastFPUUsedTaskID( BYTE bAPICID );
+void kSetLastFPUUsedTaskID( BYTE bAPICID, QWORD qwTaskID );
 
 #endif /*__TASK_H__*/

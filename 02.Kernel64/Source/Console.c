@@ -3,60 +3,60 @@
  *  date    2009/01/31
  *  author  kkamagui 
  *          Copyright(c)2008 All rights reserved by kkamagui
- *  brief   ÄÜ¼Ö¿¡ °ü·ÃµÈ ¼Ò½º ÆÄÀÏ
+ *  brief   ì½˜ì†”ì— ê´€ë ¨ëœ ì†ŒìŠ¤ íŒŒì¼
  */
 
 #include "Console.h"
 #include "Keyboard.h"
 #include "Utility.h"
 
-// ÄÜ¼ÖÀÇ Á¤º¸¸¦ °ü¸®ÇÏ´Â ÀÚ·á±¸Á¶
+// ì½˜ì†”ì˜ ì •ë³´ë¥¼ ê´€ë¦¬í•˜ëŠ” ìžë£Œêµ¬ì¡°
 CONSOLEMANAGER gs_stConsoleManager = { 0, };
 
 /**
- *  ÄÜ¼Ö ÃÊ±âÈ­
+ *  ì½˜ì†” ì´ˆê¸°í™”
  */
 void kInitializeConsole( int iX, int iY )
 {
     
-    // ÀÚ·á±¸Á¶¸¦ ¸ðµÎ 0À¸·Î ÃÊ±âÈ­
+    // ìžë£Œêµ¬ì¡°ë¥¼ ëª¨ë‘ 0ìœ¼ë¡œ ì´ˆê¸°í™”
     memset( &gs_stConsoleManager, 0, sizeof( gs_stConsoleManager ) );
 
-    // Ä¿¼­ À§Ä¡ ¼³Á¤
+    // ì»¤ì„œ ìœ„ì¹˜ ì„¤ì •
     kSetCursor( iX, iY );
 
     return;
 }
 
 /**
- *  Ä¿¼­ÀÇ À§Ä¡¸¦ ¼³Á¤
- *      ¹®ÀÚ¸¦ Ãâ·ÂÇÒ À§Ä¡µµ °°ÀÌ ¼³Á¤
+ *  ì»¤ì„œì˜ ìœ„ì¹˜ë¥¼ ì„¤ì •
+ *      ë¬¸ìžë¥¼ ì¶œë ¥í•  ìœ„ì¹˜ë„ ê°™ì´ ì„¤ì •
  */
 void kSetCursor( int iX, int iY ) 
 {
     int iLinearValue;
 
-    // Ä¿¼­ÀÇ À§Ä¡¸¦ °è»ê
+    // ì»¤ì„œì˜ ìœ„ì¹˜ë¥¼ ê³„ì‚°
     iLinearValue = iY * CONSOLE_WIDTH + iX;
 
-    // CRTC ÄÁÆ®·Ñ ¾îµå·¹½º ·¹Áö½ºÅÍ(Æ÷Æ® 0x3D4)¿¡ 0x0E¸¦ Àü¼ÛÇÏ¿©
-    // »óÀ§ Ä¿¼­ À§Ä¡ ·¹Áö½ºÅÍ¸¦ ¼±ÅÃ
+    // CRTC ì»¨íŠ¸ë¡¤ ì–´ë“œë ˆìŠ¤ ë ˆì§€ìŠ¤í„°(í¬íŠ¸ 0x3D4)ì— 0x0Eë¥¼ ì „ì†¡í•˜ì—¬
+    // ìƒìœ„ ì»¤ì„œ ìœ„ì¹˜ ë ˆì§€ìŠ¤í„°ë¥¼ ì„ íƒ
     kOutPortByte( VGA_PORT_INDEX, VGA_INDEX_UPPERCURSOR );
-    // CRTC ÄÁÆ®·Ñ µ¥ÀÌÅÍ ·¹Áö½ºÅÍ(Æ÷Æ® 0x3D5)¿¡ Ä¿¼­ÀÇ »óÀ§ ¹ÙÀÌÆ®¸¦ Ãâ·Â
+    // CRTC ì»¨íŠ¸ë¡¤ ë°ì´í„° ë ˆì§€ìŠ¤í„°(í¬íŠ¸ 0x3D5)ì— ì»¤ì„œì˜ ìƒìœ„ ë°”ì´íŠ¸ë¥¼ ì¶œë ¥
     kOutPortByte( VGA_PORT_DATA, iLinearValue >> 8 );
 
-    // CRTC ÄÁÆ®·Ñ ¾îµå·¹½º ·¹Áö½ºÅÍ(Æ÷Æ® 0x3D4)¿¡ 0x0F¸¦ Àü¼ÛÇÏ¿©
-    // ÇÏÀ§ Ä¿¼­ À§Ä¡ ·¹Áö½ºÅÍ¸¦ ¼±ÅÃ
+    // CRTC ì»¨íŠ¸ë¡¤ ì–´ë“œë ˆìŠ¤ ë ˆì§€ìŠ¤í„°(í¬íŠ¸ 0x3D4)ì— 0x0Fë¥¼ ì „ì†¡í•˜ì—¬
+    // í•˜ìœ„ ì»¤ì„œ ìœ„ì¹˜ ë ˆì§€ìŠ¤í„°ë¥¼ ì„ íƒ
     kOutPortByte( VGA_PORT_INDEX, VGA_INDEX_LOWERCURSOR );
-    // CRTC ÄÁÆ®·Ñ µ¥ÀÌÅÍ ·¹Áö½ºÅÍ(Æ÷Æ® 0x3D5)¿¡ Ä¿¼­ÀÇ ÇÏÀ§ ¹ÙÀÌÆ®¸¦ Ãâ·Â
+    // CRTC ì»¨íŠ¸ë¡¤ ë°ì´í„° ë ˆì§€ìŠ¤í„°(í¬íŠ¸ 0x3D5)ì— ì»¤ì„œì˜ í•˜ìœ„ ë°”ì´íŠ¸ë¥¼ ì¶œë ¥
     kOutPortByte( VGA_PORT_DATA, iLinearValue & 0xFF );
 
-    // ¹®ÀÚ¸¦ Ãâ·ÂÇÒ À§Ä¡ ¾÷µ¥ÀÌÆ®
+    // ë¬¸ìžë¥¼ ì¶œë ¥í•  ìœ„ì¹˜ ì—…ë°ì´íŠ¸
     gs_stConsoleManager.iCurrentPrintOffset = iLinearValue;
 }
 
 /**
- *  ÇöÀç Ä¿¼­ÀÇ À§Ä¡¸¦ ¹ÝÈ¯
+ *  í˜„ìž¬ ì»¤ì„œì˜ ìœ„ì¹˜ë¥¼ ë°˜í™˜
  */
 void kGetCursor( int *piX, int *piY )
 {
@@ -65,29 +65,31 @@ void kGetCursor( int *piX, int *piY )
 }
 
 /**
- *  printf ÇÔ¼öÀÇ ³»ºÎ ±¸Çö
+ *  printf í•¨ìˆ˜ì˜ ë‚´ë¶€ êµ¬í˜„
  */
 void kPrintf( const char* pcFormatString, ... )
 {
+    
     va_list ap;
+    
     char vcBuffer[ 1024 ];
     int iNextPrintOffset;
 
-    // °¡º¯ ÀÎÀÚ ¸®½ºÆ®¸¦ »ç¿ëÇØ¼­ vsprintf()·Î Ã³¸®
+    // ê°€ë³€ ì¸ìž ë¦¬ìŠ¤íŠ¸ë¥¼ ì‚¬ìš©í•´ì„œ vsprintf()ë¡œ ì²˜ë¦¬
     va_start( ap, pcFormatString );
     kVSPrintf( vcBuffer, pcFormatString, ap );
     va_end( ap );
     
-    // Æ÷¸Ë ¹®ÀÚ¿­À» È­¸é¿¡ Ãâ·Â
+    // í¬ë§· ë¬¸ìžì—´ì„ í™”ë©´ì— ì¶œë ¥
     iNextPrintOffset = kConsolePrintString( vcBuffer );
     
-    // Ä¿¼­ÀÇ À§Ä¡¸¦ ¾÷µ¥ÀÌÆ®
+    // ì»¤ì„œì˜ ìœ„ì¹˜ë¥¼ ì—…ë°ì´íŠ¸
     kSetCursor( iNextPrintOffset % CONSOLE_WIDTH, iNextPrintOffset / CONSOLE_WIDTH );
 }
 
 /**
- *  \n, \t¿Í °°Àº ¹®ÀÚ°¡ Æ÷ÇÔµÈ ¹®ÀÚ¿­À» Ãâ·ÂÇÑ ÈÄ, È­¸é»óÀÇ ´ÙÀ½ Ãâ·ÂÇÒ À§Ä¡¸¦ 
- *  ¹ÝÈ¯
+ *  \n, \tì™€ ê°™ì€ ë¬¸ìžê°€ í¬í•¨ëœ ë¬¸ìžì—´ì„ ì¶œë ¥í•œ í›„, í™”ë©´ìƒì˜ ë‹¤ìŒ ì¶œë ¥í•  ìœ„ì¹˜ë¥¼ 
+ *  ë°˜í™˜
  */
 int kConsolePrintString( const char* pcBuffer )
 {
@@ -96,54 +98,54 @@ int kConsolePrintString( const char* pcBuffer )
     int iLength;
     int iPrintOffset;
     
-    // ¹®ÀÚ¿­À» Ãâ·ÂÇÒ À§Ä¡¸¦ ÀúÀå
+    // ë¬¸ìžì—´ì„ ì¶œë ¥í•  ìœ„ì¹˜ë¥¼ ì €ìž¥
     iPrintOffset = gs_stConsoleManager.iCurrentPrintOffset;
 
-    // ¹®ÀÚ¿­ÀÇ ±æÀÌ¸¸Å­ È­¸é¿¡ Ãâ·Â
+    // ë¬¸ìžì—´ì˜ ê¸¸ì´ë§Œí¼ í™”ë©´ì— ì¶œë ¥
     iLength = kStrLen( pcBuffer );    
     for( i = 0 ; i < iLength ; i++ )
     {
-        // °³Çà Ã³¸®
+        // ê°œí–‰ ì²˜ë¦¬
         if( pcBuffer[ i ] == '\n' )
         {
-            // Ãâ·ÂÇÒ À§Ä¡¸¦ 80ÀÇ ¹è¼ö ÄÃ·³À¸·Î ¿Å±è
-            // ÇöÀç ¶óÀÎÀÇ ³²Àº ¹®ÀÚ¿­ÀÇ ¼ö¸¸Å­ ´õÇØ¼­ ´ÙÀ½ ¶óÀÎÀ¸·Î À§Ä¡½ÃÅ´
+            // ì¶œë ¥í•  ìœ„ì¹˜ë¥¼ 80ì˜ ë°°ìˆ˜ ì»¬ëŸ¼ìœ¼ë¡œ ì˜®ê¹€
+            // í˜„ìž¬ ë¼ì¸ì˜ ë‚¨ì€ ë¬¸ìžì—´ì˜ ìˆ˜ë§Œí¼ ë”í•´ì„œ ë‹¤ìŒ ë¼ì¸ìœ¼ë¡œ ìœ„ì¹˜ì‹œí‚´
             iPrintOffset += ( CONSOLE_WIDTH - ( iPrintOffset % CONSOLE_WIDTH ) );
         }
-        // ÅÇ Ã³¸®
+        // íƒ­ ì²˜ë¦¬
         else if( pcBuffer[ i ] == '\t' )
         {
-            // Ãâ·ÂÇÒ À§Ä¡¸¦ 8ÀÇ ¹è¼ö ÄÃ·³À¸·Î ¿Å±è
+            // ì¶œë ¥í•  ìœ„ì¹˜ë¥¼ 8ì˜ ë°°ìˆ˜ ì»¬ëŸ¼ìœ¼ë¡œ ì˜®ê¹€
             iPrintOffset += ( 8 - ( iPrintOffset % 8 ) );
         }
-        // ÀÏ¹Ý ¹®ÀÚ¿­ Ãâ·Â
+        // ì¼ë°˜ ë¬¸ìžì—´ ì¶œë ¥
         else
         {
-            // ºñµð¿À ¸Þ¸ð¸®¿¡ ¹®ÀÚ¿Í ¼Ó¼ºÀ» ¼³Á¤ÇÏ¿© ¹®ÀÚ¸¦ Ãâ·ÂÇÏ°í
-            // Ãâ·ÂÇÒ À§Ä¡¸¦ ´ÙÀ½À¸·Î ÀÌµ¿
+            // ë¹„ë””ì˜¤ ë©”ëª¨ë¦¬ì— ë¬¸ìžì™€ ì†ì„±ì„ ì„¤ì •í•˜ì—¬ ë¬¸ìžë¥¼ ì¶œë ¥í•˜ê³ 
+            // ì¶œë ¥í•  ìœ„ì¹˜ë¥¼ ë‹¤ìŒìœ¼ë¡œ ì´ë™
             pstScreen[ iPrintOffset ].bCharactor = pcBuffer[ i ];
             pstScreen[ iPrintOffset ].bAttribute = CONSOLE_DEFAULTTEXTCOLOR;
             iPrintOffset++;
         }
         
-        // Ãâ·ÂÇÒ À§Ä¡°¡ È­¸éÀÇ ÃÖ´ñ°ª(80 * 25)À» ¹þ¾î³µÀ¸¸é ½ºÅ©·Ñ Ã³¸®
+        // ì¶œë ¥í•  ìœ„ì¹˜ê°€ í™”ë©´ì˜ ìµœëŒ“ê°’(80 * 25)ì„ ë²—ì–´ë‚¬ìœ¼ë©´ ìŠ¤í¬ë¡¤ ì²˜ë¦¬
         if( iPrintOffset >= ( CONSOLE_HEIGHT * CONSOLE_WIDTH ) )
         {
-            // °¡Àå À­ÁÙÀ» Á¦¿ÜÇÑ ³ª¸ÓÁö¸¦ ÇÑÁÙ À§·Î º¹»ç
+            // ê°€ìž¥ ìœ—ì¤„ì„ ì œì™¸í•œ ë‚˜ë¨¸ì§€ë¥¼ í•œì¤„ ìœ„ë¡œ ë³µì‚¬
             memcpy( (void *)CONSOLE_VIDEOMEMORYADDRESS, 
                      (void *) CONSOLE_VIDEOMEMORYADDRESS + CONSOLE_WIDTH * sizeof( CHARACTER ),
                      ( CONSOLE_HEIGHT - 1 ) * CONSOLE_WIDTH * sizeof( CHARACTER ) );
 
-            // °¡Àå ¸¶Áö¸· ¶óÀÎÀº °ø¹éÀ¸·Î Ã¤¿ò
+            // ê°€ìž¥ ë§ˆì§€ë§‰ ë¼ì¸ì€ ê³µë°±ìœ¼ë¡œ ì±„ì›€
             for( j = ( CONSOLE_HEIGHT - 1 ) * ( CONSOLE_WIDTH ) ; 
                  j < ( CONSOLE_HEIGHT * CONSOLE_WIDTH ) ; j++ )
             {
-                // °ø¹é Ãâ·Â
+                // ê³µë°± ì¶œë ¥
                 pstScreen[ j ].bCharactor = ' ';
                 pstScreen[ j ].bAttribute = CONSOLE_DEFAULTTEXTCOLOR;
             }
             
-            // Ãâ·ÂÇÒ À§Ä¡¸¦ °¡Àå ¾Æ·¡ÂÊ ¶óÀÎÀÇ Ã³À½À¸·Î ¼³Á¤
+            // ì¶œë ¥í•  ìœ„ì¹˜ë¥¼ ê°€ìž¥ ì•„ëž˜ìª½ ë¼ì¸ì˜ ì²˜ìŒìœ¼ë¡œ ì„¤ì •
             iPrintOffset = ( CONSOLE_HEIGHT - 1 ) * CONSOLE_WIDTH;
         }
     }
@@ -151,41 +153,41 @@ int kConsolePrintString( const char* pcBuffer )
 }
 
 /**
- *  ÀüÃ¼ È­¸éÀ» »èÁ¦
+ *  ì „ì²´ í™”ë©´ì„ ì‚­ì œ
  */
 void kClearScreen( void )
 {
     CHARACTER* pstScreen = ( CHARACTER* ) CONSOLE_VIDEOMEMORYADDRESS;
     int i;
     
-    // È­¸é ÀüÃ¼¸¦ °ø¹éÀ¸·Î Ã¤¿ì°í, Ä¿¼­ÀÇ À§Ä¡¸¦ 0, 0À¸·Î ¿Å±è
+    // í™”ë©´ ì „ì²´ë¥¼ ê³µë°±ìœ¼ë¡œ ì±„ìš°ê³ , ì»¤ì„œì˜ ìœ„ì¹˜ë¥¼ 0, 0ìœ¼ë¡œ ì˜®ê¹€
     for( i = 0 ; i < CONSOLE_WIDTH * CONSOLE_HEIGHT ; i++ )
     {
         pstScreen[ i ].bCharactor = ' ';
         pstScreen[ i ].bAttribute = CONSOLE_DEFAULTTEXTCOLOR;
     }
     
-    // Ä¿¼­¸¦ È­¸é ÇÏ´ÜÀ¸·Î ÀÌµ¿
+    // ì»¤ì„œë¥¼ í™”ë©´ í•˜ë‹¨ìœ¼ë¡œ ì´ë™
     kSetCursor( 0, 24 );
 }
 
 /**
- *  getch() ÇÔ¼öÀÇ ±¸Çö
+ *  getch() í•¨ìˆ˜ì˜ êµ¬í˜„
  */
 BYTE kGetCh( void )
 {
     KEYDATA stData;
     
-    // Å°°¡ ´­·¯Áú¶§±îÁö ´ë±âÇÔ
+    // í‚¤ê°€ ëˆŒëŸ¬ì§ˆë•Œê¹Œì§€ ëŒ€ê¸°í•¨
     while( 1 )
     {
-        // Å° Å¥¿¡ µ¥ÀÌÅÍ°¡ ¼ö½ÅµÉ ¶§±îÁö ´ë±â
+        // í‚¤ íì— ë°ì´í„°ê°€ ìˆ˜ì‹ ë  ë•Œê¹Œì§€ ëŒ€ê¸°
         while( kGetKeyFromKeyQueue( &stData ) == FALSE )
         {
             kSchedule();
         }
         
-        // Å°°¡ ´­·È´Ù´Â µ¥ÀÌÅÍ°¡ ¼ö½ÅµÇ¸é ASCII ÄÚµå¸¦ ¹ÝÈ¯
+        // í‚¤ê°€ ëˆŒë ¸ë‹¤ëŠ” ë°ì´í„°ê°€ ìˆ˜ì‹ ë˜ë©´ ASCII ì½”ë“œë¥¼ ë°˜í™˜
         if( stData.bFlags & KEY_FLAGS_DOWN )
         {
             return stData.bASCIICode;
@@ -194,16 +196,16 @@ BYTE kGetCh( void )
 }
 
 /**
- *  ¹®ÀÚ¿­À» X, Y À§Ä¡¿¡ Ãâ·Â
+ *  ë¬¸ìžì—´ì„ X, Y ìœ„ì¹˜ì— ì¶œë ¥
  */
 void kPrintStringXY( int iX, int iY, const char* pcString )
 {
     CHARACTER* pstScreen = ( CHARACTER* ) CONSOLE_VIDEOMEMORYADDRESS;
     int i;
     
-    // ºñµð¿À ¸Þ¸ð¸® ¾îµå·¹½º¿¡¼­ ÇöÀç Ãâ·ÂÇÒ À§Ä¡¸¦ °è»ê
+    // ë¹„ë””ì˜¤ ë©”ëª¨ë¦¬ ì–´ë“œë ˆìŠ¤ì—ì„œ í˜„ìž¬ ì¶œë ¥í•  ìœ„ì¹˜ë¥¼ ê³„ì‚°
     pstScreen += ( iY * CONSOLE_WIDTH ) + iX;
-    // ¹®ÀÚ¿­ÀÇ ±æÀÌ¸¸Å­ ·çÇÁ¸¦ µ¹¸é¼­ ¹®ÀÚ¿Í ¼Ó¼ºÀ» ÀúÀå
+    // ë¬¸ìžì—´ì˜ ê¸¸ì´ë§Œí¼ ë£¨í”„ë¥¼ ëŒë©´ì„œ ë¬¸ìžì™€ ì†ì„±ì„ ì €ìž¥
     for( i = 0 ; pcString[ i ] != 0 ; i++ )
     {
         pstScreen[ i ].bCharactor = pcString[ i ];
