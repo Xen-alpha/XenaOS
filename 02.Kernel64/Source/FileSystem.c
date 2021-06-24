@@ -11,6 +11,7 @@
 #include "DynamicMemory.h"
 #include "Task.h"
 #include "Utility.h"
+#include "Console.h"
 
 // 파일 시스템 자료구조
 static FILESYSTEMMANAGER   gs_stFileSystemManager;

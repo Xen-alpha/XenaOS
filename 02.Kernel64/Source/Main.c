@@ -23,6 +23,8 @@
 #include "InterruptHandler.h"
 #include "MPConfigurationTable.h"
 #include "SystemCall.h"
+#include "PCI.h"
+#include "ACPI.h"
 
 // 함수 선언
 void MainForAP(void);
@@ -92,8 +94,16 @@ void Main_64( void )
     // PIC 컨트롤러 초기화 및 모든 인터럽트 활성화
     kInitializePIC();
     kMaskPICInterrupt( 0 );
-    kEnableInterrupt();
     kPrintf( "PIC Controller And Interrupt Initialize.....[Pass]\n" );
+    kEnableInterrupt();
+
+    xInitACPIMode();
+    xGetAndParsePCIRegisterInfo();
+    kPrintf( "ACPI & PCI Bus Initialize......................[Pass]\n" );
+
+    kInitializeSerialPort();
+    kPrintf( "Serial Port Initialize......................[Pass]\n" );
+    iCursorY++;
 
      // HDD 및 파일 시스템을 초기화
     if( kInitializeFileSystem() == TRUE )
@@ -104,27 +114,13 @@ void Main_64( void )
     {
         kPrintf( "File System Initialize......................[Fail]\n" );
     }
-
-    kInitializeSerialPort();
-    kPrintf( "Serial Port Initialize......................[Pass]\n" );
-    iCursorY++;
-    
     // 멀티코어 프로세서 모드로 전환
     // Application Processor 활성화, I/O 모드 활성화, 인터럽트와 태스크 부하 분산
     // 기능 활성화
-    kPrintf( "Change To MultiCore Processor Mode..........[    ]" );
-    if( kChangeToMultiCoreMode() == TRUE )
-    {
-        kSetCursor( 45, iCursorY++ );
-        kPrintf( "Pass\n" );
-    }
-    else
-    {
-        kSetCursor( 45, iCursorY++ );
-        kPrintf( "Fail\n" );
-    }
+    kChangeToMultiCoreMode();
+    kPrintf( "Change To MultiCore Processor Mode..........[Pass]\n" );
 
-        // 시스템 콜에 관련된 MSR을 초기화
+    // 시스템 콜에 관련된 MSR을 초기화
     kPrintf( "System Call MSR Initialize..................[Pass]\n" );
     iCursorY++;
     kInitializeSystemCall();

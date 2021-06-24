@@ -99,6 +99,9 @@ typedef struct kIOAPICManagerStruct
 {
     // ISA 버스가 연결된 I/O APIC의 메모리 맵 어드레스
     QWORD qwIOAPICBaseAddressOfISA;
+
+    // PCI 버스가 연결된 I/O APIC의 메모리 맵 어드레스
+    QWORD qwIOAPICBaseAddressOfPCI;
     
     // IRQ와 I/O APIC의 인터럽트 입력 핀(INTIN)간의 연결 관계를 저장하는 테이블
     BYTE vbIRQToINTINMap[ IOAPIC_MAXIRQTOINTINMAPCOUNT ];    
@@ -111,11 +114,12 @@ typedef struct kIOAPICManagerStruct
 //
 ////////////////////////////////////////////////////////////////////////////////
 QWORD kGetIOAPICBaseAddressOfISA( void );
+QWORD kGetIOAPICBaseAddressOfPCI( void );
 void kSetIOAPICRedirectionEntry( IOREDIRECTIONTABLE* pstEntry, BYTE bAPICID,
         BYTE bInterruptMask, BYTE bFlagsAndDeliveryMode, BYTE bVector );
-void kReadIOAPICRedirectionTable( int iINTIN, IOREDIRECTIONTABLE* pstEntry );
-void kWriteIOAPICRedirectionTable( int iINTIN, IOREDIRECTIONTABLE* pstEntry );
-void kMaskAllInterruptInIOAPIC( void );
+void kReadIOAPICRedirectionTable( int bus, int iINTIN, IOREDIRECTIONTABLE* pstEntry );
+void kWriteIOAPICRedirectionTable( int bus, int iINTIN, IOREDIRECTIONTABLE* pstEntry );
+void kMaskAllInterruptInIOAPIC( int bus );
 void kInitializeIORedirectionTable( void );
 void kPrintIRQToINTINMap( void );
 void kRoutingIRQToAPICID( int iIRQ, BYTE bAPICID );

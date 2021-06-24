@@ -122,7 +122,6 @@ void kProcessLoadBalancing( int iIRQ )
             bResetCount = TRUE;
         }
     }
-    
     // I/O 리다이렉션 테이블을 변경하여 가장 인터럽트를 처리한 횟수가 작은 로컬 APIC로 전달
     kRoutingIRQToAPICID( iIRQ, iMinCountCoreIndex );
     

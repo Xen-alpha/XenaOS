@@ -224,5 +224,6 @@ MPCONFIGRUATIONMANAGER* kGetMPConfigurationManager( void );
 void kPrintMPConfigurationTable( void );
 int kGetProcessorCount( void );
 IOAPICENTRY* kFindIOAPICEntryForISA( void );
+IOAPICENTRY* kFindIOAPICEntryForPCI( void );
 
 #endif /*__MPCONFIGURATIONTABLE__*/

@@ -25,6 +25,8 @@ cn *  brief   콘솔 셸에 관련된 소스 파일
 #include "IOAPIC.h"
 #include "InterruptHandler.h"
 #include "SystemCall.h"
+#include "PCI.h"
+#include "ACPI.h"
 
 // 커맨드 테이블 정의
 SHELLCOMMANDENTRY gs_vstCommandTable[] =

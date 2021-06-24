@@ -37,16 +37,16 @@ BOOL kInitializeHDD(void)
         return FALSE;
     }
 
-    // 하드 디스크가 검색되었으면 QEMU에서만 쓸 수 있도록 설정하지 않음
+    // 하드 디스크가 검색되었으면 QEMU에서만 쓸 수 있도록 설정
     gs_stHDDManager.bHDDDetected = TRUE;
-    /*if( kMemCmp( gs_stHDDManager.stHDDInformation.vwModelNumber, "Xena", 4 ) == 0 )
-    {*/
+    if( kMemCmp( gs_stHDDManager.stHDDInformation.vwModelNumber, "VBOX", 4 ) == 0 )
+    {
         gs_stHDDManager.bCanWrite = TRUE;
-    /**
+    }
     else
     {
         gs_stHDDManager.bCanWrite = FALSE;
-    }*/
+    }
     return TRUE;
 }
 

@@ -11,8 +11,8 @@
 
 #include "Types.h"
 #include "Synchronization.h"
-#include "Utility.h"
 #include "Console.h"
+#include "Utility.h"
 
 ////////////////////////////////////////////////////////////////////////////////
 //
