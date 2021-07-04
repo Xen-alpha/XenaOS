@@ -39,7 +39,7 @@ QWORD kGetIOAPICBaseAddressOfISA( void )
 }
 
 /**
- *  ISA 버스가 연결된 I/O APIC의 기준 어드레스를 반환
+ *  PCI 버스가 연결된 I/O APIC의 기준 어드레스를 반환
  */
 QWORD kGetIOAPICBaseAddressOfPCI( void )
 {
@@ -275,26 +275,20 @@ void kInitializeIORedirectionTable( void )
             } 
             // 이번에는 PCI 버스
             else if (( pstIOAssignmentEntry->bSourceBUSID == pstMPManager->bPCIBusID ) &&
-                ( pstIOAssignmentEntry->bInterruptType == MP_INTERRUPTTYPE_INT )) {
-                    // 목적지 필드는 IRQ 0를 제외하고 0x00으로 설정하여 Bootstrap Processor만 전달
-                // IRQ 0는 스케줄러에 사용해야 하므로 0xFF로 설정하여 모든 코어로 전달
-                if( pstIOAssignmentEntry->bSourceBUSIRQ == 0 )
-                {
-                    bDestination = 0xFF;
-                }
-                else
-                {
+            ( pstIOAssignmentEntry->bInterruptType == MP_INTERRUPTTYPE_INT )) {
+                    // 목적지 필드는 모두 0x00으로 설정하여 Bootstrap Processor만 전달: PIT는 ISA 버스에 있는 것으로 가정
+                
                     bDestination = 0x00;
-                }
+                
                 
                 // PCI 버스는 레벨 트리거(Level Trigger)와 0일 때 활성화(Active Low)를
                 // 사용
                 // 목적지 모드는 물리 모드, 전달 모드는 고정(Fixed)으로 할당
-                // 인터럽트 벡터는 PIC 컨트롤러의 벡터와 같이 0x20 + IRQ로 설정
+                // 인터럽트 벡터는 PIC 컨트롤러의 벡터와 달리 0x30 + IRQ로 설정
                 kSetIOAPICRedirectionEntry( &stIORedirectionEntry, bDestination, 
                     0x00, IOAPIC_TRIGGERMODE_LEVEL | IOAPIC_POLARITY_ACTIVELOW |
                     IOAPIC_DESTINATIONMODE_PHYSICALMODE | IOAPIC_DELIVERYMODE_FIXED, 
-                    PIC_IRQSTARTVECTOR + pstIOAssignmentEntry->bSourceBUSIRQ );
+                    (PIC_IRQSTARTVECTOR + 16) + (pstIOAssignmentEntry->bSourceBUSIRQ & 0x03) ); // we only have 4 irq: from a to d
                 
                 // PCI 버스에서 전달된 IRQ는 I/O APIC의 INTIN 핀에 있으므로, INTIN 값을
                 // 이용하여 처리

@@ -11,7 +11,7 @@
 #include "AssemblyUtility.h"
 #include "Descriptor.h"
 #include "SystemCallList.h"
-#include "FileSystem.h"
+#include "HardDisk.h"
 #include "DynamicMemory.h"
 #include "RTC.h"
 #include "Task.h"
@@ -73,9 +73,10 @@ QWORD kProcessSystemCall( QWORD qwServiceNumber, PARAMETERTABLE* pstParameter )
     case SYSCALL_FREE:
         return kFreeMemory( ( void* ) PARAM( 0 ) );
 
-        //----------------------------------------------------------------------
-        // 파일과 디렉터리 I/O 관련
-        //----------------------------------------------------------------------
+    //----------------------------------------------------------------------
+    // 파일과 디렉터리 I/O 관련
+    //----------------------------------------------------------------------
+    /*
     case SYSCALL_FOPEN:
         return ( QWORD ) fopen( ( char* ) PARAM( 0 ), ( char* ) PARAM( 1 ) );
     case SYSCALL_FREAD:
@@ -101,16 +102,17 @@ QWORD kProcessSystemCall( QWORD qwServiceNumber, PARAMETERTABLE* pstParameter )
         return closedir( ( DIR* ) PARAM( 0 ) );
     case SYSCALL_ISFILEOPENED:
         return kIsFileOpened( ( DIRECTORYENTRY* ) PARAM( 0 ) );
+    */
 
         //----------------------------------------------------------------------
         // 하드 디스크 I/O 관련
         //----------------------------------------------------------------------
     case SYSCALL_READHDDSECTOR:
-        return kReadHDDSector( PARAM( 0 ), PARAM( 1 ), PARAM( 2 ), PARAM( 3 ), 
-                               ( char* ) PARAM( 4 ) );
+        return kReadHDDSector( PARAM( 0 ), PARAM( 1), PARAM( 2 ), 
+                               ( char* ) PARAM( 3 ) );
     case SYSCALL_WRITEHDDSECTOR:
-        return kWriteHDDSector( PARAM( 0 ), PARAM( 1 ), PARAM( 2 ), PARAM( 3 ), 
-                               ( char* ) PARAM( 4 ) );
+        return kWriteHDDSector( PARAM( 0 ), PARAM( 1 ), PARAM( 2 ), 
+                               ( char* ) PARAM( 3 ) );
 
         //----------------------------------------------------------------------
         // 태스크와 스케줄러 관련

@@ -62,7 +62,7 @@
 #define IOAPIC_DELIVERYMODE_EXTINT                      0x07
 
 // IRQ를 I/O APIC의 인터럽트 입력 핀(INTIN)으로 대응시키는 테이블의 최대 크기
-#define IOAPIC_MAXIRQTOINTINMAPCOUNT                    16
+#define IOAPIC_MAXIRQTOINTINMAPCOUNT                    24
 
 ////////////////////////////////////////////////////////////////////////////////
 //

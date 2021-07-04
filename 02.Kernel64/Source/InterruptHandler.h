@@ -18,8 +18,8 @@
 //  매크로
 //
 ////////////////////////////////////////////////////////////////////////////////
-// 인터럽트 벡터의 최대 개수, ISA 버스의 인터럽트만 처리하므로 16
-#define INTERRUPT_MAXVECTORCOUNT            16
+// 인터럽트 벡터의 최대 개수, PCI 버스의 인터럽트도 처리하므로 16->24로 변경, IRQ 55까지 처리
+#define INTERRUPT_MAXVECTORCOUNT            24
 // 인터럽트 부하 분산을 수행하는 시점, 인터럽트 처리 횟수가 10의 배수가 되는 시점
 #define INTERRUPT_LOADBALANCINGDIVIDOR      10
 
@@ -42,10 +42,7 @@ typedef struct kInterruptManagerStruct
 } INTERRUPTMANAGER;
 
 
-////////////////////////////////////////////////////////////////////////////////
-//
-// 함수
-//
+//////////////////////////////////////////////////// 
 ////////////////////////////////////////////////////////////////////////////////
 void kSetSymmetricIOMode( BOOL bSymmetricIOMode );
 void kSetInterruptLoadBalancing( BOOL bUseLoadBalancing );

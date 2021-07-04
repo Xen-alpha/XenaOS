@@ -101,7 +101,8 @@ BOOL kAnalysisMPConfigurationTable( void )
     // 자료구조 초기화
     memset( &gs_stMPConfigurationManager, 0, sizeof( MPCONFIGRUATIONMANAGER ) );
     gs_stMPConfigurationManager.bISABusID = 0xFF;
-    
+    gs_stMPConfigurationManager.bPCIBusID = 0xFF;
+
     // MP 플로팅 포인터의 어드레스를 구함
     if( kFindMPFloatingPointerAddress( &qwMPFloatingPointerAddress ) == FALSE )
     {
@@ -128,7 +129,7 @@ BOOL kAnalysisMPConfigurationTable( void )
         pstMPFloatingPointer->dwMPConfigurationTableAddress + 
         sizeof( MPCONFIGURATIONTABLEHEADER );
     
-    // 모든 엔트리를 돌면서 프로세서의 코어 수를 계산하고 ISA 버스를 검색하여 ID를 저장
+    // 모든 엔트리를 돌면서 프로세서의 코어 수를 계산하고 버스를 검색하여 ID를 저장
     qwEntryAddress = gs_stMPConfigurationManager.qwBaseEntryStartAddress;
     for( i = 0 ; i < pstMPConfigurationHeader->wEntryCount ; i++ )
     {
@@ -145,7 +146,7 @@ BOOL kAnalysisMPConfigurationTable( void )
             qwEntryAddress += sizeof( PROCESSORENTRY );
             break;
             
-            // 버스 엔트리이면 ISA 버스인지 확인하여 저장
+            // 버스 엔트리이면 ISA 버스인지 PCI 버스인지 확인하여 저장
         case MP_ENTRYTYPE_BUS:
             pstBusEntry = ( BUSENTRY* ) qwEntryAddress;
             if( memcmp( pstBusEntry->vcBusTypeString, MP_BUS_TYPESTRING_ISA,
@@ -435,6 +436,7 @@ void kPrintMPConfigurationTable( void )
             
         default :
             kPrintf( "Unknown Entry Type. %d\n", bEntryType );
+            
             break;
         }
 
@@ -592,10 +594,10 @@ IOAPICENTRY* kFindIOAPICEntryForPCI( void )
             qwEntryAddress += 8;
             break;
             
-            // IO 인터럽트 지정 엔트리이면, ISA 버스에 관련된 엔트리인지 확인
+            // IO 인터럽트 지정 엔트리이면, PCI 버스에 관련된 엔트리인지 확인
         case MP_ENTRYTYPE_IOINTERRUPTASSIGNMENT:
             pstIOAssignmentEntry = ( IOINTERRUPTASSIGNMENTENTRY* ) qwEntryAddress;
-            // MP Configuration Manager 자료구조에 저장된 ISA 버스 ID와 비교
+            // MP Configuration Manager 자료구조에 저장된 PCI 버스 ID와 비교
             if( pstIOAssignmentEntry->bSourceBUSID == 
                 gs_stMPConfigurationManager.bPCIBusID )
             {

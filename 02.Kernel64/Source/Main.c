@@ -14,9 +14,8 @@
 #include "Task.h"
 #include "PIT.h"
 #include "DynamicMemory.h"
-#include "HardDisk.h"
-#include "FileSystem.h"
 #include "SerialPort.h"
+#include "HardDisk.h"
 #include "MultiProcessor.h"
 #include "IOAPIC.h"
 #include "LocalAPIC.h"
@@ -25,6 +24,7 @@
 #include "SystemCall.h"
 #include "PCI.h"
 #include "ACPI.h"
+#include "AHCI.h"
 
 // 함수 선언
 void MainForAP(void);
@@ -75,6 +75,7 @@ void Main_64( void )
     kInitializeDynamicMemory();
     kPrintf( "Dynamic Memory Initialize...................[Pass]\n" );
 
+    
     // 1ms당 한번씩 인터럽트가 발생하도록 설정
     kInitializePIT( MSTOCOUNT( 1 ), 1 );
 
@@ -95,35 +96,44 @@ void Main_64( void )
     kInitializePIC();
     kMaskPICInterrupt( 0 );
     kPrintf( "PIC Controller And Interrupt Initialize.....[Pass]\n" );
+    
     kEnableInterrupt();
 
-    xInitACPIMode();
-    xGetAndParsePCIRegisterInfo();
-    kPrintf( "ACPI & PCI Bus Initialize......................[Pass]\n" );
-
-    kInitializeSerialPort();
-    kPrintf( "Serial Port Initialize......................[Pass]\n" );
-    iCursorY++;
-
-     // HDD 및 파일 시스템을 초기화
-    if( kInitializeFileSystem() == TRUE )
-    {
-        kPrintf( "File System Initialize......................[Pass]\n" );
-    }
-    else
-    {
-        kPrintf( "File System Initialize......................[Fail]\n" );
-    }
     // 멀티코어 프로세서 모드로 전환
     // Application Processor 활성화, I/O 모드 활성화, 인터럽트와 태스크 부하 분산
     // 기능 활성화
     kChangeToMultiCoreMode();
     kPrintf( "Change To MultiCore Processor Mode..........[Pass]\n" );
 
+
+    kInitializeSerialPort();
+    kPrintf( "Serial Port Initialize......................[Pass]\n" );
+    iCursorY++;
+
+    xGetAndParsePCIRegisterInfo();
+    xInitACPIMode();
+    
+    kPrintf( "ACPI & PCI Bus Initialize......................[Pass]\n" );
+    // HDD 초기화
+    
+    if( kInitializeHDD() == TRUE )
+    {
+        kPrintf( "SATA Storage Initialize......................[Pass]\n" );
+    }
+    else
+    {
+        kPrintf( "SATA Storage Initialize......................[Fail]\n" );
+    }
+    //kInitializeFileSystem();
+
     // 시스템 콜에 관련된 MSR을 초기화
     kPrintf( "System Call MSR Initialize..................[Pass]\n" );
     iCursorY++;
     kInitializeSystemCall();
+
+    
+    
+    
 
     // 유휴 태스크를 생성하고 셸을 시작
     kCreateTask( TASK_FLAGS_LOWEST | TASK_FLAGS_THREAD | TASK_FLAGS_SYSTEM | TASK_FLAGS_IDLE, 0, 0, ( QWORD ) kIdleTask, kGetAPICID() );

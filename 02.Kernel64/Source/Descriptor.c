@@ -226,8 +226,11 @@ void kInitializeIDTTables( void )
         IDT_FLAGS_KERNEL, IDT_TYPE_INTERRUPT );
     kSetIDTEntry( &( pstEntry[ 47 ] ), kISRHDD2, 0x08, IDT_FLAGS_IST1, 
         IDT_FLAGS_KERNEL, IDT_TYPE_INTERRUPT );
+    kSetIDTEntry( &( pstEntry[ 48 ] ), kISRAHCI, 0x08, IDT_FLAGS_IST1, 
+        IDT_FLAGS_KERNEL, IDT_TYPE_INTERRUPT );
 
-    for( i = 48 ; i < IDT_MAXENTRYCOUNT ; i++ )
+
+    for( i = 49 ; i < IDT_MAXENTRYCOUNT ; i++ )
     {
         kSetIDTEntry( &( pstEntry[ i ] ), kISRETCInterrupt, 0x08, IDT_FLAGS_IST1, 
             IDT_FLAGS_KERNEL, IDT_TYPE_INTERRUPT );

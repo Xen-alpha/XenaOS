@@ -13,12 +13,14 @@
 #include "Synchronization.h"
 #include "Console.h"
 #include "Utility.h"
+#include "AHCI.h"
 
 ////////////////////////////////////////////////////////////////////////////////
 //
 // 매크로
 //
 ////////////////////////////////////////////////////////////////////////////////
+/*
 // 첫 번째 PATA 포트(Primary PATA Port)와 두 번째 PATA 포트(Secondary PATA Port)의 정보
 #define HDD_PORT_PRIMARYBASE                0x1F0
 #define HDD_PORT_SECONDARYBASE              0x170
@@ -33,7 +35,7 @@
 #define HDD_PORT_INDEX_STATUS               0x07
 #define HDD_PORT_INDEX_COMMAND              0x07
 #define HDD_PORT_INDEX_DIGITALOUTPUT        0x206
-
+*/
 // 커맨드 레지스터에 관련된 매크로
 #define HDD_COMMAND_READ                    0x20
 #define HDD_COMMAND_WRITE                   0x30
@@ -41,21 +43,21 @@
 
 // 상태 레지스터에 관련된 매크로
 #define HDD_STATUS_ERROR                    0x01
-#define HDD_STATUS_INDEX                    0x02
-#define HDD_STATUS_CORRECTEDDATA            0x04
+//#define HDD_STATUS_INDEX                    0x02
+//#define HDD_STATUS_CORRECTEDDATA            0x04
 #define HDD_STATUS_DATAREQUEST              0x08
-#define HDD_STATUS_SEEKCOMPLETE             0x10
-#define HDD_STATUS_WRITEFAULT               0x20
-#define HDD_STATUS_READY                    0x40
+//#define HDD_STATUS_SEEKCOMPLETE             0x10
+//#define HDD_STATUS_WRITEFAULT               0x20
+//#define HDD_STATUS_READY                    0x40
 #define HDD_STATUS_BUSY                     0x80
 
 // 드라이브/헤드 레지스터에 관련된 매크로
-#define HDD_DRIVEANDHEAD_LBA                0xE0
-#define HDD_DRIVEANDHEAD_SLAVE              0x10
+//#define HDD_DRIVEANDHEAD_LBA                0xE0
+//#define HDD_DRIVEANDHEAD_SLAVE              0x10
 
 // 디지털 출력 레지스터에 관련된 매크로
-#define HDD_DIGITALOUTPUT_RESET             0x04
-#define HDD_DIGITALOUTPUT_DISABLEINTERRUPT  0x01
+//#define HDD_DIGITALOUTPUT_RESET             0x04
+//#define HDD_DIGITALOUTPUT_DISABLEINTERRUPT  0x01
 
 // 하드 디스크의 응답을 대기하는 시간(millisecond)
 #define HDD_WAITTIME                        500
@@ -113,38 +115,39 @@ typedef struct kHDDInformationStruct
 typedef struct kHDDManagerStruct
 {
     // HDD 존재 여부와 쓰기를 수행할 수 있는지 여부
-    BOOL bHDDDetected;
-    BOOL bCanWrite;
+    BOOL bHDDDetected[4];
+    BOOL bCanWrite[4];
     
-    // 인터럽트 발생 여부와 동기화 객체
-    volatile BOOL bPrimaryInterruptOccur;
-    volatile BOOL bSecondaryInterruptOccur;
-    MUTEX stMutex;
+    // 동기화 객체
+    volatile BOOL bInterruptOccur[4];
+    MUTEX stMutex[4];
     
     // HDD 정보
-    HDDINFORMATION stHDDInformation;
+    HDDINFORMATION *stHDDInformation[4];
+    
+    
 } HDDMANAGER;
 
-
+extern HDDMANAGER gs_stHDDManager;
 ////////////////////////////////////////////////////////////////////////////////
 //
 // 함수
 //
 ////////////////////////////////////////////////////////////////////////////////
 BOOL kInitializeHDD( void );
-BOOL kReadHDDInformation( BOOL bPrimary, BOOL bMaster, HDDINFORMATION* pstHDDInformation );
-int kReadHDDSector( BOOL bPrimary, BOOL bMaster, DWORD dwLBA, int iSectorCount, 
+BOOL kReadHDDInformation( int portnum);
+int kReadHDDSector( int portnum, DWORD dwLBA, int iSectorCount, 
         char* pcBuffer );
-int kWriteHDDSector( BOOL bPrimary, BOOL bMaster, DWORD dwLBA, int iSectorCount, 
+int kWriteHDDSector( int portnum, DWORD dwLBA, int iSectorCount, 
         char* pcBuffer );
-void kSetHDDInterruptFlag( BOOL bPrimary, BOOL bFlag );
+void kSetHDDInterruptFlag(int portnum, BOOL bFlag );
 
 static void kSwapByteInWord( WORD* pwData, int iWordCount );
-static BYTE kReadHDDStatus( BOOL bPrimary );
-static BOOL kIsHDDBusy( BOOL bPrimary );
-static BOOL kIsHDDReady( BOOL bPrimary );
-static BOOL kWaitForHDDNoBusy( BOOL bPrimary );
-static BOOL kWaitForHDDReady( BOOL bPrimary );
-static BOOL kWaitForHDDInterrupt( BOOL bPrimary );
+static BYTE kReadHDDStatus( int portnum );
+static BOOL kIsHDDBusy( int portnum );
+static BOOL kIsHDDReady( int portnum  );
+static BOOL kWaitForHDDNoBusy( int portnum  );
+static BOOL kWaitForHDDReady( int portnum  );
+static BOOL kWaitForHDDInterrupt( int portnum  );
 
 #endif /*__HARDDISK_H__*/

@@ -49,7 +49,7 @@
 #define TASK_SSOFFSET           23
 
 // 태스크 풀의 어드레스
-#define TASK_TCBPOOLADDRESS     0x800000
+#define TASK_TCBPOOLADDRESS     0x1000000
 #define TASK_MAXCOUNT           1024
 
 // 스택 풀과 스택의 크기

@@ -28,7 +28,7 @@ void xPCIConfigWriteWord(BYTE bus, BYTE slot, BYTE function, BYTE regoffset, WOR
     address = (DWORD)((lbus << 16) | (lslot << 11) | (lfunc << 8) | (regoffset & 0xfc) | ((DWORD) 0x80000000));
 
     kOutPortDword(0xCF8, address);
-    kOutPortDword(0xCFC, value);
+    kOutPortWord(0xCFC, value);
     
     return;
 }
@@ -133,3 +133,5 @@ void xPrintPCIRegisterInfo(BYTE bus, BYTE slot, BYTE func) {
     kPrintf("0x%x 0x%x\n", xPCIConfigReadWord(bus, slot, func, 0x26), xPCIConfigReadWord(bus, slot, func, 0x24));
     return;
 }
+
+

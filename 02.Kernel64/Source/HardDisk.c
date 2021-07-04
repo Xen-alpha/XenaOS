@@ -7,45 +7,47 @@
  */
 
 #include "HardDisk.h"
+#include "DynamicMemory.h"
 
 // 하드 디스크를 관리하는 자료구조
-static HDDMANAGER gs_stHDDManager;
+HDDMANAGER gs_stHDDManager;
 
 /**
  *  하드 디스크 디바이스 드라이버를 초기화
  */
 BOOL kInitializeHDD(void)
 {
-    // 뮤텍스 초기화
-    kInitializeMutex( &( gs_stHDDManager.stMutex ) );
-
-    // 인터럽트 플래그 초기화
-    gs_stHDDManager.bPrimaryInterruptOccur = FALSE;
-    gs_stHDDManager.bSecondaryInterruptOccur = FALSE;
-
-    // 첫 번째와 두 번째 PATA 포트의 디지털 출력 레지스터(포트 0x3F6와 0x376)에 0을
-    // 출력하여 하드 디스크 컨트롤러의 인터럽트를 활성화
-    kOutPortByte( HDD_PORT_PRIMARYBASE + HDD_PORT_INDEX_DIGITALOUTPUT, 0 );
-    kOutPortByte( HDD_PORT_SECONDARYBASE + HDD_PORT_INDEX_DIGITALOUTPUT, 0 );
     
-    // 하드 디스크 정보 요청
-    if( kReadHDDInformation( TRUE, TRUE, &( gs_stHDDManager.stHDDInformation ) ) 
-            == FALSE )
-    {
-        gs_stHDDManager.bHDDDetected = FALSE;
-        gs_stHDDManager.bCanWrite = FALSE;
+    BOOL init1 = xInitializeAHCI( );
+    
+    if (init1 == FALSE) {
+        kPrintf("Something go wrong with ahci\n");
         return FALSE;
     }
-
-    // 하드 디스크가 검색되었으면 QEMU에서만 쓸 수 있도록 설정
-    gs_stHDDManager.bHDDDetected = TRUE;
-    if( kMemCmp( gs_stHDDManager.stHDDInformation.vwModelNumber, "VBOX", 4 ) == 0 )
-    {
-        gs_stHDDManager.bCanWrite = TRUE;
-    }
-    else
-    {
-        gs_stHDDManager.bCanWrite = FALSE;
+    identify_Storage();
+    for (int k = 0 ; k < 4 ; k++){
+        
+        // 뮤텍스 초기화
+        kInitializeMutex( &( gs_stHDDManager.stMutex[k] ) );
+        
+        // 하드 디스크 정보 요청
+        if( kReadHDDInformation( k ) == FALSE )
+        {
+            kPrintf("Cannot read port %d HDD information\n", k);
+            gs_stHDDManager.bHDDDetected[k] = FALSE;
+            gs_stHDDManager.bCanWrite[k] = FALSE;
+            continue;
+        }
+        kPrintf("port %d has HDD information\n", k);
+        // 하드 디스크가 검색되었으면 VirtualBox에서만 쓸 수 있도록 설정
+        if( kMemCmp( gs_stHDDManager.stHDDInformation[k]->vwModelNumber, "VBOX", 4 ) == 0 )
+        {
+            gs_stHDDManager.bCanWrite[k] = TRUE;
+        }
+        else
+        {
+            gs_stHDDManager.bCanWrite[k] = FALSE;
+        }
     }
     return TRUE;
 }
@@ -53,21 +55,16 @@ BOOL kInitializeHDD(void)
 /**
  *  하드 디스크의 상태를 반환
  */
-static BYTE kReadHDDStatus( BOOL bPrimary )
+static BYTE kReadHDDStatus( int portnum )
 {
-    if( bPrimary == TRUE )
-    {
-        // 첫 번째 PATA 포트의 상태 레지스터(포트 0x1F7)에서 값을 반환
-        return kInPortByte( HDD_PORT_PRIMARYBASE + HDD_PORT_INDEX_STATUS );
-    }
-    // 두 번째 PATA 포트의 상태 레지스터(포트 0x177)에서 값을 반환
-    return kInPortByte( HDD_PORT_SECONDARYBASE + HDD_PORT_INDEX_STATUS );
+    // 해당 SATA 포트의 상태 레지스터에서 값을 반환
+    return -1;
 }
 
 /**
  *  하드 디스크의 Busy가 해제될 때까지 일정 시간 동안 대기
  */
-static BOOL kWaitForHDDNoBusy( BOOL bPrimary )
+static BOOL kWaitForHDDNoBusy( int portnum )
 {
     QWORD qwStartTickCount;
     BYTE bStatus;
@@ -79,14 +76,14 @@ static BOOL kWaitForHDDNoBusy( BOOL bPrimary )
     while( ( kGetTickCount() - qwStartTickCount ) <= HDD_WAITTIME )
     {
         // HDD의 상태를 반환
-        bStatus = kReadHDDStatus( bPrimary );
+        bStatus = kReadHDDStatus( portnum );
 
-        // Busy 비트(비트 7)이 설정되어 있지 않으면 Busy가 해제된 것이므로 종료
-        if( ( bStatus & HDD_STATUS_BUSY ) != HDD_STATUS_BUSY )
+        // Busy 비트(비트 7), Data request(비트 3)이 설정되어 있지 않으면 Busy가 해제된 것이므로 종료
+        if( ( bStatus & 0x80) == 0 && (bStatus & 0x08) == 0)
         {
             return TRUE;
         }
-        kSleep( 1 );
+        kSleep(1);
     }
     return FALSE;
 }
@@ -94,7 +91,7 @@ static BOOL kWaitForHDDNoBusy( BOOL bPrimary )
 /**
  *  하드 디스크가 Ready될 때까지 일정 시간 동안 대기
  */
-static BOOL kWaitForHDDReady(BOOL bPrimary)
+static BOOL kWaitForHDDReady(int portnum )
 {
     QWORD qwStartTickCount;
     BYTE bStatus;
@@ -103,19 +100,14 @@ static BOOL kWaitForHDDReady(BOOL bPrimary)
     qwStartTickCount = kGetTickCount();
 
     // 일정 시간 동안 하드 디스크가 Ready가 될 때까지 대기
+    /*
     while( ( kGetTickCount() - qwStartTickCount ) <= HDD_WAITTIME )
     {
-        // HDD의 상태를 반환
-        bStatus = kReadHDDStatus( bPrimary );
-
-        // Ready 비트(비트 6)이 설정되어 있으면 데이터를 받을 준비가 된 것이므로
-        // 종료
-        if( ( bStatus & HDD_STATUS_READY ) == HDD_STATUS_READY )
-        {
+        if ((gs_stHDDManager.stSATAHDDInformation.ahciBaseAddress->ports[portnum].sact & 0x01) == 0) {
             return TRUE;
         }
-        kSleep( 1 );
     }
+    */
     return FALSE;
 }
 
@@ -123,40 +115,25 @@ static BOOL kWaitForHDDReady(BOOL bPrimary)
 /**
  *  인터럽트 발생 여부를 설정
  */
-void kSetHDDInterruptFlag( BOOL bPrimary, BOOL bFlag )
+void kSetHDDInterruptFlag( int portnum , BOOL bFlag )
 {
-    if( bPrimary == TRUE )
-    {
-        gs_stHDDManager.bPrimaryInterruptOccur = bFlag;
-    }
-    else
-    {
-        gs_stHDDManager.bSecondaryInterruptOccur = bFlag;
-    }
+    gs_stHDDManager.bInterruptOccur[portnum] = bFlag;
 }
 
 /**
  *  인터럽트가 발생할 때까지 대기
  */
-static BOOL kWaitForHDDInterrupt( BOOL bPrimary )
+static BOOL kWaitForHDDInterrupt( int portnum  )
 {
     QWORD qwTickCount;
-    
     // 대기를 시작한 시간을 저장
     qwTickCount = kGetTickCount();
     
     // 일정 시간 동안 하드 디스크의 인터럽트가 발생할 때까지 대기
     while( kGetTickCount() - qwTickCount <= HDD_WAITTIME )
     {
-        // 하드 디스크 자료구조에 인터럽트 발생 플래그를 확인
-        if( ( bPrimary == TRUE ) && 
-            ( gs_stHDDManager.bPrimaryInterruptOccur == TRUE ) )
-        {
-            return TRUE;
-        }
-        else if( ( bPrimary == FALSE ) && 
-                 ( gs_stHDDManager.bSecondaryInterruptOccur == TRUE ) )
-        {
+        //하드 디스크 자료구조에 인터럽트 발생 플래그를 확인
+        if (gs_stHDDManager.bInterruptOccur[portnum] == TRUE){
             return TRUE;
         }
     }
@@ -166,105 +143,25 @@ static BOOL kWaitForHDDInterrupt( BOOL bPrimary )
 /**
  *  하드 디스크의 정보를 읽음
  */
-BOOL kReadHDDInformation( BOOL bPrimary, BOOL bMaster, HDDINFORMATION* pstHDDInformation )
+BOOL kReadHDDInformation( int portnum )
 {
-    WORD wPortBase;
-    QWORD qwLastTickCount;
-    BYTE bStatus;
-    BYTE bDriveFlag;
-    int i;
-    WORD wTemp;
-    BOOL bWaitResult;
+    return FALSE;
+    if ( portnum >= 4) {
+        kPrintf("cannot access port %d\n", portnum);
+        return FALSE;
+    }
 
-    // PATA 포트에 따라서 I/O 포트의 기본 어드레스를 설정
-    if( bPrimary == TRUE )
-    {
-        // 첫 번째 PATA 포트이면 포트 0x1F0을 저장
-        wPortBase = HDD_PORT_PRIMARYBASE;
-    }
-    else
-    {
-        // 두 번째 PATA 포트이면 포트 0x170을 저장
-        wPortBase = HDD_PORT_SECONDARYBASE;
-    }
+    //int slot = find_cmdslot(&gs_stHDDManager.stSATAHDDInformation.ahciBaseAddress->ports[portnum]);
 
     // 동기화 처리
-    kLockMutex( &(gs_stHDDManager.stMutex ) );
+    kLockMutex( &(gs_stHDDManager.stMutex[portnum] ) );
     
-    // 아직 수행 중인 커맨드가 있다면 일정 시간 동안 끝날 때까지 대기
-    if( kWaitForHDDNoBusy( bPrimary ) == FALSE )
-    {
-        // 동기화 처리
-        kUnlockMutex( &(gs_stHDDManager.stMutex ) );
-        return FALSE;
-    }
     
-    //==========================================================================
-    //  LBA 어드레스와 드라이브 및 헤드에 관련된 레지스터 설정
-    //      드라이브와 헤드 정보만 있으면 됨
-    //==========================================================================
-    // 드라이브와 헤드 데이터 설정
-    if( bMaster == TRUE )
-    {
-        // 마스터이면 LBA 플래그만 설정
-        bDriveFlag = HDD_DRIVEANDHEAD_LBA;
-    }
-    else
-    {
-        // 슬레이브이면 LBA 플래그에 슬레이브 플래그도 같이 설정
-        bDriveFlag = HDD_DRIVEANDHEAD_LBA | HDD_DRIVEANDHEAD_SLAVE;
-    }
-    // 드라이브/헤드 레지스터(포트 0x1F6 또는 0x176)에 설정된 값을 전송
-    kOutPortByte( wPortBase + HDD_PORT_INDEX_DRIVEANDHEAD, bDriveFlag );
-
-    //==========================================================================
-    //  커맨드 전송 후, 인터럽트 대기
-    //==========================================================================
-    // 커맨드를 받아들일 준비가 될 때까지 일정 시간 동안 대기
-    if( kWaitForHDDReady( bPrimary ) == FALSE )
-    {
-        // 동기화 처리
-        kUnlockMutex( &(gs_stHDDManager.stMutex ) );
-        return FALSE;
-    }
-
-    // 인터럽트 플래그를 초기화
-    kSetHDDInterruptFlag( bPrimary, FALSE );
     
-    // 커맨드 레지스터(포트 0x1F7 또는 0x177)에 드라이브 인식 커맨드(0xEC)를 전송
-    kOutPortByte( wPortBase + HDD_PORT_INDEX_COMMAND, HDD_COMMAND_IDENTIFY );
-
-    // 처리가 완료될 때까지 인터럽트 발생을 기다림
-    bWaitResult = kWaitForHDDInterrupt( bPrimary );
-    // 에러가 발생하거나 인터럽트가 발생하지 않으면 문제가 발생한 것이므로 종료
-    bStatus = kReadHDDStatus( bPrimary );
-    if( ( bWaitResult == FALSE ) || 
-        ( ( bStatus & HDD_STATUS_ERROR ) == HDD_STATUS_ERROR ) )
-    {
-        // 동기화 처리
-        kUnlockMutex( &( gs_stHDDManager.stMutex ) );
-        return FALSE;
-    }
-
-    //==========================================================================
-    //  데이터 수신
-    //==========================================================================
-    // 한 섹터를 읽음
-    for( i = 0; i < 512 / 2; i++ )
-    {
-        ( ( WORD* ) pstHDDInformation )[ i ] =
-        kInPortWord( wPortBase + HDD_PORT_INDEX_DATA );
-    }
-
-    // 문자열은 바이트 순서로 다시 변환
-    kSwapByteInWord( pstHDDInformation->vwModelNumber,
-            sizeof( pstHDDInformation->vwModelNumber ) / 2 );
-    kSwapByteInWord( pstHDDInformation->vwSerialNumber,
-            sizeof( pstHDDInformation->vwSerialNumber ) / 2 );
-
     // 동기화 처리
-    kUnlockMutex( &(gs_stHDDManager.stMutex ) );
+    kUnlockMutex( &(gs_stHDDManager.stMutex[portnum] ) );
     return TRUE;
+    
 }
 
 /**
@@ -287,9 +184,10 @@ static void kSwapByteInWord(WORD* pwData, int iWordCount)
  *      최대 256개의 섹터를 읽을 수 있음
  *      실제로 읽은 섹터 수를 반환
  */
-int kReadHDDSector( BOOL bPrimary, BOOL bMaster, DWORD dwLBA, int iSectorCount,
+int kReadHDDSector( int portnum , DWORD dwLBA, int iSectorCount,
         char* pcBuffer )
 {
+    /*
     WORD wPortBase;
     int i, j;
     BYTE bDriveFlag;
@@ -415,6 +313,8 @@ int kReadHDDSector( BOOL bPrimary, BOOL bMaster, DWORD dwLBA, int iSectorCount,
     // 동기화 처리
     kUnlockMutex( &( gs_stHDDManager.stMutex ) );
     return i;
+    */
+   return 0;
 }
 
 /**
@@ -422,9 +322,10 @@ int kReadHDDSector( BOOL bPrimary, BOOL bMaster, DWORD dwLBA, int iSectorCount,
  *      최대 256개의 섹터를 쓸 수 있음
  *      실제로 쓴 섹터 수를 반환
  */
-int kWriteHDDSector(BOOL bPrimary, BOOL bMaster, DWORD dwLBA, int iSectorCount,
+int kWriteHDDSector(int portnum , DWORD dwLBA, int iSectorCount,
         char* pcBuffer)
 {
+    /*
     WORD wPortBase;
     WORD wTemp;
     int i, j;
@@ -567,4 +468,6 @@ int kWriteHDDSector(BOOL bPrimary, BOOL bMaster, DWORD dwLBA, int iSectorCount,
     // 동기화 처리
     kUnlockMutex( &(gs_stHDDManager.stMutex ) );
     return i;
+    */
+   return 0;
 }

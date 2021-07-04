@@ -375,7 +375,7 @@ void kDeviceNotAvailableHandler( int iVectorNumber )
 /**
  *  하드 디스크에서 발생하는 인터럽트의 핸들러
  */
-void kHDDHandler( int iVectorNumber )
+void kHDDHandler( int iVectorNumber)
 {
     char vcBuffer[] = "[INT:  , ]";
     static int g_iHDDInterruptCount = 0;
@@ -393,10 +393,6 @@ void kHDDHandler( int iVectorNumber )
     // 왼쪽 위에 있는 메시지와 겹치지 않도록 (10, 0)에 출력
     kPrintStringXY( 10, 0, vcBuffer );
     //=========================================================================
-
-    // 첫 번째 PATA 포트의 인터럽트 발생 여부를 TRUE로 설정
-    kSetHDDInterruptFlag( TRUE, TRUE );
-    
     // 인터럽트 벡터에서 IRQ 번호 추출
     iIRQ = iVectorNumber - PIC_IRQSTARTVECTOR;
 
